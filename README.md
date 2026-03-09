@@ -2,8 +2,9 @@
 
 <!-- badges: start -->
 [![CRAN status](https://www.r-pkg.org/badges/version/pmsampsize)](https://CRAN.R-project.org/package=pmsampsize)
+[![CRAN downloads](https://cranlogs.r-pkg.org/badges/pmsampsize)](https://CRAN.R-project.org/package=pmsampsize)
 [![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/pmsampsize)](https://CRAN.R-project.org/package=pmsampsize)
-[![R-CMD-check](https://github.com/JoieEnsor/pmsampsize/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/JoieEnsor/pmsampsize/actions/workflows/R-CMD-check.yaml)
+[![License: GPL (>= 3)](https://img.shields.io/badge/License-GPL%20(%3E%3D%203)-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 <!-- badges: end -->
 
 
@@ -101,7 +102,19 @@ pmsampsize(type = "c", rsquared = 0.2, parameters = 25, intercept = 1.9, sd = 0.
 
 ## Citation
 
-If you use `pmsampsize` in your research, please cite the following papers:
+If you use `pmsampsize` in your research, please cite:
+
+```bibtex
+@Manual{,
+  title  = {pmsampsize: Sample Size for Development of a Prediction Model},
+  author = {Joie Ensor},
+  year   = {2023},
+  note   = {R package version 1.1.3},
+  url    = {https://CRAN.R-project.org/package=pmsampsize},
+}
+```
+
+Please also cite the following papers:
 
 Riley RD, Ensor J, Snell KIE, Harrell FE, Martin GP, Reitsma JB, et al. Calculating the sample size required for developing a clinical prediction model. *BMJ*. 2020. <https://doi.org/10.1136/bmj.m441>
 
@@ -120,3 +133,5 @@ With thanks to Richard D. Riley, Emma C. Martin, Gary Collins, Glen Martin & Kym
 ## License
 
 GPL (≥ 3)
+
+Bugs and feature requests can be submitted via the [GitHub Issues](https://github.com/JoieEnsor/pmsampsize/issues) page.
