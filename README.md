@@ -1,12 +1,11 @@
-# pmsampsize <img src="man/figures/logo.png" align="right" height="139" alt="" />
+# pmsampsize 
 
 <!-- badges: start -->
 [![CRAN status](https://www.r-pkg.org/badges/version/pmsampsize)](https://CRAN.R-project.org/package=pmsampsize)
 [![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/pmsampsize)](https://CRAN.R-project.org/package=pmsampsize)
-[![R-CMD-check](https://github.com/joieensor/pmsampsize/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/joieensor/pmsampsize/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/JoieEnsor/pmsampsize/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/JoieEnsor/pmsampsize/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-> **Note:** Replace `joieensor` in the badge URLs above with your actual GitHub username.
 
 ## Overview
 
@@ -30,10 +29,8 @@ Or install the development version from GitHub:
 
 ```r
 # install.packages("remotes")
-remotes::install_github("joieensor/pmsampsize")
+remotes::install_github("JoieEnsor/pmsampsize")
 ```
-
-> **Note:** Replace `joieensor` with your actual GitHub username.
 
 ## Usage
 
