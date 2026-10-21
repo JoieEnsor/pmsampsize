@@ -1,3 +1,8 @@
+pmsampsize v2.0.0 (development version)
+=============================================
+* `pmvalsampsize()` (sample size for external validation of a prediction model; previously the standalone pmvalsampsize package, v0.1.0, released 2023-11-14) is now part of pmsampsize. Existing `pmvalsampsize()` calls give the same results.
+* `pmvalsampsize()` no longer depends on pROC. The c-statistic of the simulated data for the `lpcstat` option is now computed internally (same value), and `simulated_data_cstat` in the returned object is now a plain number rather than a pROC `auc` object.
+
 pmsampsize v1.1.3 (Release date: 2023-12-05)
 =============================================
 * added options to specify the cox-snell or nagelkerke's r-squared directly for binary outcome models
