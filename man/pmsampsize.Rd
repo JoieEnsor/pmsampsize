@@ -2,8 +2,7 @@
 % Please edit documentation in R/pmsampsize.R
 \name{pmsampsize}
 \alias{pmsampsize}
-\title{pmsampsize
-- Sample Size for Development of a Prediction Model}
+\title{pmsampsize - Sample Size for Development of a Prediction Model}
 \usage{
 pmsampsize(
   type,
@@ -26,9 +25,9 @@ pmsampsize(
 \arguments{
 \item{type}{specifies the type of analysis for which sample size is being calculated
 \itemize{
-    \item \code{"c"} specifies sample size calculation for a prediction model with a continuous outcome
-    \item \code{"b"} specifies sample size calculation for a prediction model with a binary outcome
-    \item \code{"s"} specifies sample size calculation for a prediction model with a survival (time-to-event) outcome
+\item \code{"c"} specifies sample size calculation for a prediction model with a continuous outcome
+\item \code{"b"} specifies sample size calculation for a prediction model with a binary outcome
+\item \code{"s"} specifies sample size calculation for a prediction model with a survival (time-to-event) outcome
 }}
 
 \item{nagrsquared}{for \code{type="b" or type="s"} this specifies the expected value of
@@ -142,7 +141,6 @@ ii) small absolute difference of 0.05 in the model's apparent and adjusted Nagel
 value, and \cr
 iii) precise estimation (within +/- 0.05) of the average outcome risk in the
 population for a key timepoint of interest for prediction.
-
 
 With thanks to Richard D. Riley, Emma C Martin, Gary Collins, Glen Martin & Kym Snell for helpful input & feedback
 }

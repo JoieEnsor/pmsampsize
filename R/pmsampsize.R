@@ -1,5 +1,4 @@
-#' pmsampsize
-#' - Sample Size for Development of a Prediction Model
+#' pmsampsize - Sample Size for Development of a Prediction Model
 #'
 #' @description \code{pmsampsize} computes the minimum sample size required for the development of a new
 #' multivariable prediction model using the criteria proposed by Riley \emph{et al}. 2018.
@@ -9,7 +8,7 @@
 #' criteria the sample size should meet. These aim to minimise the overfitting and to ensure
 #' precise estimation of key parameters in the prediction model. \cr \cr
 #' For continuous outcomes, there are four criteria: \cr
-#' i) small overfitting defined by an expected shrinkage of predictor effects by 10\% or less, \cr
+#' i) small overfitting defined by an expected shrinkage of predictor effects by 10% or less, \cr
 #' ii) small absolute difference of 0.05 in the model's apparent and adjusted R-squared value, \cr
 #' iii) precise estimation of the residual standard deviation, and \cr
 #' iv) precise estimation of the average outcome value. \cr \cr
@@ -17,7 +16,7 @@
 #' the anticipated R-squared of the model, and the average outcome value and standard deviation
 #' of outcome values in the population of interest. \cr \cr
 #' For binary or survival (time-to-event) outcomes, there are three criteria: \cr
-#' i) small overfitting defined by an expected shrinkage of predictor effects by 10\% or less, \cr
+#' i) small overfitting defined by an expected shrinkage of predictor effects by 10% or less, \cr
 #' ii) small absolute difference of 0.05 in the model's apparent and adjusted Nagelkerke's R-squared
 #' value, and \cr
 #' iii) precise estimation (within +/- 0.05) of the average outcome risk in the
@@ -58,11 +57,11 @@
 #' expected R-squared performance.
 #' The papers by Riley et al. (see references) outline how to obtain the Cox-Snell R-squared value
 #' from published studies if they are not reported, using other information (such as the
-#' C-statistic [see \code{cstatistic()} option below]).
+#' C-statistic \[see \code{cstatistic()} option below\]).
 #'
 #' @param nagrsquared for \code{type="b" or type="s"} this specifies the expected value of
 #' the Nagelkerke's R-squared of the new model, which is the Cox-Snell R-squared scaled to
-#' lie in the [0,1] range. It is interpretable in the same way as the standard R-squared, i.e.
+#' lie in the \[0,1\] range. It is interpretable in the same way as the standard R-squared, i.e.
 #' the percentage of variation in outcome values explained by the model.
 #' Please read the description of \code{rsquared} for additional details about specifying the
 #' expected R-squared performance
@@ -76,7 +75,7 @@
 #' developing the new model. Shrinkage is a measure of overfitting, and can range from 0 to 1,
 #' with higher values denoting less overfitting. We recommend a shrinkage = 0.9 (the
 #' default in \code{pmsampsize}), which indicates that the predictor effect (beta coefficients) in
-#' the model would need to be shrunk by 10\% to adjust for overfitting. See references
+#' the model would need to be shrunk by 10% to adjust for overfitting. See references
 #' below for further information.
 #'
 #' @param prevalence (\code{type="b"} option) specifies the overall outcome proportion
@@ -119,7 +118,7 @@
 #'
 #' @param mmoe (\code{type="c"} options) multiplicative margin of error (MMOE)
 #' acceptable for calculation of the
-#' intercept. The default is a MMOE of 10\%. Confidence interval for the intercept will be
+#' intercept. The default is a MMOE of 10%. Confidence interval for the intercept will be
 #' displayed in the output for reference. See references below for further information.
 #'
 #' @import stats
