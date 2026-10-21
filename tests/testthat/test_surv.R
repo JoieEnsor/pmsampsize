@@ -1,5 +1,3 @@
-context("survival_ss_checks")
-
 test_that("Test 3.1", {
   ss <- c(4286, 866, 4286, 4286)
   SPP <- c(23.07, 4.66, 23.07, 23.07)

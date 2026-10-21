@@ -1,5 +1,3 @@
-context("syntax_checks")
-
 # general checks
 #======================================
 test_that("Test 1.1.1", {

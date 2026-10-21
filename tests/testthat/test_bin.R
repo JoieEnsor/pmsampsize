@@ -1,5 +1,3 @@
-context("binary_ss_checks")
-
 test_that("Test 4.1", {
   ss <- c(623, 662, 221, 662)
   SPP <- c(4.52, 4.8, 1.6, 4.8)

@@ -5,7 +5,9 @@ Title: Sample Size for Development of a Prediction Model
 Authors@R: c(person("Joie", "Ensor", role = c("aut", "cre"), email = "j.ensor@bham.ac.uk"))
 Maintainer: Joie Ensor <j.ensor@bham.ac.uk>
 Depends: R (>= 2.1)
-Suggests: stats
+Suggests: stats,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
 Description: Computes the minimum sample size required for the development of a new multivariable prediction model using the criteria proposed by Riley et al. (2018) <doi: 10.1002/sim.7992>. pmsampsize can be used to calculate the minimum sample size for the development of models with continuous, binary or survival (time-to-event) outcomes. Riley et al. (2018) <doi: 10.1002/sim.7992> lay out a series of criteria the sample size should meet. These aim to minimise the overfitting and to ensure precise estimation of key parameters in the prediction model.
 License: GPL (>= 3)
 RoxygenNote: 7.2.3

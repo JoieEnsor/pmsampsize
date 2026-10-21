@@ -1,5 +1,3 @@
-context("continuous_ss_checks")
-
 test_that("Test 2.1", {
   ss <- c(918, 401, 259, 918, 918)
   SPP <- c(36.72, 16.04, 10.36, 36.72, 36.72)
