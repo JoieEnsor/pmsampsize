@@ -9,9 +9,5 @@ Suggests: stats
 Description: Computes the minimum sample size required for the development of a new multivariable prediction model using the criteria proposed by Riley et al. (2018) <doi: 10.1002/sim.7992>. pmsampsize can be used to calculate the minimum sample size for the development of models with continuous, binary or survival (time-to-event) outcomes. Riley et al. (2018) <doi: 10.1002/sim.7992> lay out a series of criteria the sample size should meet. These aim to minimise the overfitting and to ensure precise estimation of key parameters in the prediction model.
 License: GPL (>= 3)
 RoxygenNote: 7.2.3
+LazyData: true
 Encoding: UTF-8
-NeedsCompilation: no
-Packaged: 2023-12-06 00:06:39 UTC; ensorj
-Author: Joie Ensor [aut, cre]
-Repository: CRAN
-Date/Publication: 2023-12-06 09:10:02 UTC
