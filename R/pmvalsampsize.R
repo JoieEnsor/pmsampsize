@@ -74,13 +74,9 @@
 #'
 #' @param lpbeta defines parameters to simulate the distribution of predicted probabilities for criteria 2 from a beta distribution.  The user must specify the alpha and beta parameters (in this order) of the probability distribution. The LP distribution is then generated internally using this probability distribution.
 #'
-#' @param lpcstat defines parameters to simulate the LP distribution for criteria 2 assuming that the distribution of events and non-events are normal with a common variance.  The user specifies a single input value - the expected mean for the non-events distribution. This could be informed by clinical guidance.  However, this input is taken as a starting value and an iterative process is used to identify the most appropriate values for the event and non-event distributions so as to closely match the anticipated prevalence in the validation sample.  NB: this approach makes strong assumptions of normality and equal variances in each outcome group, which may be unrealistic in most situations.
+#' @param lpcstat logical. If \code{TRUE}, the LP distribution for criteria 2 is simulated assuming that the distributions of the LP in events and non-events are normal with a common variance, derived from the anticipated \code{cstatistic} (which must be greater than 0.5).  The mean for the non-events distribution is calculated so that the expected outcome proportion matches the anticipated \code{prevalence} in the validation sample, and the mean for the events distribution follows from this.  Default \code{FALSE}.  NB: this approach makes strong assumptions of normality and equal variances in each outcome group, which may be unrealistic in most situations.  In pmvalsampsize 0.1.0 \code{lpcstat} took a starting value for the non-events mean; a numeric value is still accepted, with a warning, and treated as \code{TRUE}.
 #'
-#' @param tolerance for use with \code{lpcstat} option.  Sets the tolerance for agreement between the simulated and expected event proportion during the iterative procedure for calculating the mean for the non-events distribution.
-#'
-#' @param increment for use with \code{lpcstat} option.  Sets increment by which to iterate the value of the mean for the non-events distribution.  Trial and error may be necessary as it is dependent on how close the initial input for the non-event mean in \code{lpcstat} is to the required value.  If the process takes a particularly long time then the user could try an alternative increment value, or an alternative non-event mean value in \code{lpcstat}.  The \code{trace} option may be useful in such circumstances.
-#'
-#' @param trace for use with \code{lpcstat} option.  Specifies that a trace of the values obtained in each iteration when identifying the non-event mean is output.  Useful when finding the appropriate values for \code{lpcstat} & \code{increment()} is proving difficult!
+#' @param tolerance,increment,trace Retired in pmsampsize 2.0.0, and ignored with a warning if supplied.  These controlled the iterative search for the non-events mean used by \code{lpcstat} in pmvalsampsize 0.1.0, which is now calculated exactly.
 #'
 #' @param seed specifies the initial value of the random-number seed used by the random-number functions when simulating data to approximate the LP distribution for criteria 2.
 #'
@@ -110,7 +106,7 @@
 #'
 # #' @param mmoe multiplicative margin of error (MMOE) acceptable for calculation of the variance for c-slope and CITL in the calibration model.  The default is a MMOE of 10\%.  See Archer et al. reference below for further information.
 #'
-#' @importFrom stats qnorm rbeta rbinom rnorm
+#' @importFrom stats dnorm integrate plogis qlogis qnorm rbeta rbinom rnorm uniroot
 #' @import graphics
 #' @import utils
 #' @noMd
@@ -145,11 +141,11 @@
 #' lpbeta = c(0.5,0.5), oeciwidth = 1, simobs = 1000)
 #'
 #' # Finally, we can use the anticipated c-statistic to simulate the event and
-#' # non-event distributions assuming normality and common variances.  We input
-#' # a starting value for the mean of the non-events distribution as below:
+#' # non-event distributions assuming normality and common variances.  The mean
+#' # of the non-events distribution is calculated to match the prevalence:
 #'
 #' pmvalsampsize(type = "b", prevalence = 0.018, cstatistic = 0.8,
-#' lpcstat = -4.7, oeciwidth = 1, seed = 1234, simobs = 10000)
+#' lpcstat = TRUE, oeciwidth = 1, seed = 1234, simobs = 10000)
 #'
 # #' ## Continuous outcomes (Linear prediction models)
 # #' # Use pmvalsampsize to calculate the minimum sample size required for validation of a multivariable prediction model for a continuous outcome (here, fat-free mass in children).  We know the existing prediction model has been previously validated in a small sample with an R-squared of 0.9.  Riley et al. compute the anticipated variance of outcome values in the validation sample based on reported upper and lower quartile values deriving var(Y)=0.089 (see Riley et al. for details).  We conservatively assume perfect calibration performance at validation.  If we target a R-sq CI width=0.1, CITL CI width=0.08 and c-slope CI width=0.2, then we can run the following command:
@@ -173,12 +169,12 @@ pmvalsampsize <- function(type,
                        lpnormal = NA,
                        #lpskewednormal = NA,
                        lpbeta = NA,
-                       lpcstat = NA,
-                       tolerance = 0.0005,
-                       increment = 0.1,
+                       lpcstat = FALSE,
+                       tolerance = NULL,
+                       increment = NULL,
                        oeseincrement = 0.0001,
                        graph = FALSE,
-                       trace = FALSE,
+                       trace = NULL,
                        prevalence = NA,
                        seed = 123456,
                        sensitivity = NA,
@@ -193,13 +189,28 @@ pmvalsampsize <- function(type,
                      #  varobs = 0,
                      #  mmoe=1.1
 
+  # retired arguments (they served the iterative lpcstat search in pmvalsampsize 0.1.0)
+  if (!is.null(tolerance)) warning('tolerance was retired in pmsampsize 2.0.0 and is ignored')
+  if (!is.null(increment)) warning('increment was retired in pmsampsize 2.0.0 and is ignored')
+  if (!is.null(trace)) warning('trace was retired in pmsampsize 2.0.0 and is ignored')
+
+  # lpcstat is logical; NA (the 0.1.0 default) means not used, and a numeric
+  # value (a starting value in 0.1.0) selects the option
+  if (length(lpcstat) == 1 && is.na(lpcstat)) {
+    lpcstat <- FALSE
+  }
+  else if (is.numeric(lpcstat)) {
+    warning('a numeric lpcstat is no longer used and is treated as lpcstat = TRUE: the mean for the non-events distribution is now calculated from prevalence and cstatistic')
+    lpcstat <- TRUE
+  }
+
   # error checking
-  pmvalsampsize_errorcheck(type=type,prevalence=prevalence,cstatistic=cstatistic,oe=oe,oeciwidth=oeciwidth,cslope=cslope,csciwidth=csciwidth,cstatciwidth=cstatciwidth,simobs=simobs,lpnormal=lpnormal,lpbeta=lpbeta,lpcstat=lpcstat,tolerance=tolerance,increment=increment,oeseincrement=oeseincrement,seed=seed,graph=graph,trace=trace,sensitivity=sensitivity,specificity=specificity,threshold=threshold,nbciwidth=nbciwidth,nbseincrement=nbseincrement)
+  pmvalsampsize_errorcheck(type=type,prevalence=prevalence,cstatistic=cstatistic,oe=oe,oeciwidth=oeciwidth,cslope=cslope,csciwidth=csciwidth,cstatciwidth=cstatciwidth,simobs=simobs,lpnormal=lpnormal,lpbeta=lpbeta,lpcstat=lpcstat,oeseincrement=oeseincrement,seed=seed,graph=graph,sensitivity=sensitivity,specificity=specificity,threshold=threshold,nbciwidth=nbciwidth,nbseincrement=nbseincrement)
 
   # choose function based on analysis type
   # if (type == "c") out <- pmvalsampsize_cont()
 
-  if (type == "b") out <- pmvalsampsize_bin(prevalence=prevalence,cstatistic=cstatistic,oe=oe,oeciwidth=oeciwidth,cslope=cslope,csciwidth=csciwidth,cstatciwidth=cstatciwidth,simobs=simobs,lpnormal=lpnormal,lpbeta=lpbeta,lpcstat=lpcstat,tolerance=tolerance,increment=increment,oeseincrement=oeseincrement,seed=seed,graph=graph,trace=trace,sensitivity=sensitivity,specificity=specificity,threshold=threshold,nbciwidth=nbciwidth,nbseincrement=nbseincrement)
+  if (type == "b") out <- pmvalsampsize_bin(prevalence=prevalence,cstatistic=cstatistic,oe=oe,oeciwidth=oeciwidth,cslope=cslope,csciwidth=csciwidth,cstatciwidth=cstatciwidth,simobs=simobs,lpnormal=lpnormal,lpbeta=lpbeta,lpcstat=lpcstat,oeseincrement=oeseincrement,seed=seed,graph=graph,sensitivity=sensitivity,specificity=specificity,threshold=threshold,nbciwidth=nbciwidth,nbseincrement=nbseincrement)
 
 
   est <- out

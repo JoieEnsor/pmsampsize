@@ -1,9 +1,10 @@
-pmvalsampsize_errorcheck <- function(type,prevalence,cstatistic,oe,oeciwidth,cslope,csciwidth,cstatciwidth,simobs,lpnormal,lpskewednormal,lpbeta,lpcstat,tolerance,increment,oeseincrement,seed,graph,trace,sensitivity,specificity,threshold,nbciwidth,nbseincrement) {
+pmvalsampsize_errorcheck <- function(type,prevalence,cstatistic,oe,oeciwidth,cslope,csciwidth,cstatciwidth,simobs,lpnormal,lpskewednormal,lpbeta,lpcstat,oeseincrement,seed,graph,sensitivity,specificity,threshold,nbciwidth,nbseincrement) {
 
   # syntax checks
   if (type != "c" & type != "b" & type != "s") stop('type must be "c" for continuous, "b" for binary or "s" for survival')
   if (is.numeric(simobs) == F) stop('simobs must be an integer')
   if (simobs != round(simobs)) stop('simobs must be an integer')
+  if (!is.logical(lpcstat) || length(lpcstat) != 1 || is.na(lpcstat)) stop('lpcstat must be TRUE or FALSE')
 
 
   # parameter restrictions
@@ -36,7 +37,7 @@ pmvalsampsize_errorcheck <- function(type,prevalence,cstatistic,oe,oeciwidth,csl
 
     if (is.na(lpnormal[1])==F) {
 
-      if (is.na(lpbeta[1])==F | is.na(lpcstat[1])==F) {
+      if (is.na(lpbeta[1])==F | isTRUE(lpcstat)) {
         stop('Only one LP distribution option can be specified')
 
       }
@@ -44,13 +45,13 @@ pmvalsampsize_errorcheck <- function(type,prevalence,cstatistic,oe,oeciwidth,csl
     }
     else if (is.na(lpbeta[1])==F) {
 
-      if (is.na(lpcstat[1])==F) {
+      if (isTRUE(lpcstat)) {
         stop('Only one LP distribution option can be specified')
 
       }
 
     }
-    else if (is.na(lpnormal[1]) & is.na(lpbeta[1]) & is.na(lpcstat[1])) {
+    else if (is.na(lpnormal[1]) & is.na(lpbeta[1]) & !isTRUE(lpcstat)) {
 
       stop('An LP distribution must be specified')
 
@@ -61,6 +62,7 @@ pmvalsampsize_errorcheck <- function(type,prevalence,cstatistic,oe,oeciwidth,csl
 
     if (cstatistic < 0 | cstatistic > 1) stop('cstatistic must be between 0 and 1')
     if (is.numeric(cstatistic) == F) stop('cstatistic must be numeric')
+    if (lpcstat & (cstatistic <= 0.5 | cstatistic >= 1)) stop('cstatistic must be greater than 0.5 and less than 1 when lpcstat = TRUE')
 
     if (is.numeric(cslope) == F) stop('rsquared must be numeric')
 

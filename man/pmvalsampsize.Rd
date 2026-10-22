@@ -15,12 +15,12 @@ pmvalsampsize(
   simobs = 1e+06,
   lpnormal = NA,
   lpbeta = NA,
-  lpcstat = NA,
-  tolerance = 5e-04,
-  increment = 0.1,
+  lpcstat = FALSE,
+  tolerance = NULL,
+  increment = NULL,
   oeseincrement = 1e-04,
   graph = FALSE,
-  trace = FALSE,
+  trace = NULL,
   prevalence = NA,
   seed = 123456,
   sensitivity = NA,
@@ -54,17 +54,13 @@ pmvalsampsize(
 
 \item{lpbeta}{defines parameters to simulate the distribution of predicted probabilities for criteria 2 from a beta distribution.  The user must specify the alpha and beta parameters (in this order) of the probability distribution. The LP distribution is then generated internally using this probability distribution.}
 
-\item{lpcstat}{defines parameters to simulate the LP distribution for criteria 2 assuming that the distribution of events and non-events are normal with a common variance.  The user specifies a single input value - the expected mean for the non-events distribution. This could be informed by clinical guidance.  However, this input is taken as a starting value and an iterative process is used to identify the most appropriate values for the event and non-event distributions so as to closely match the anticipated prevalence in the validation sample.  NB: this approach makes strong assumptions of normality and equal variances in each outcome group, which may be unrealistic in most situations.}
+\item{lpcstat}{logical. If \code{TRUE}, the LP distribution for criteria 2 is simulated assuming that the distributions of the LP in events and non-events are normal with a common variance, derived from the anticipated \code{cstatistic} (which must be greater than 0.5).  The mean for the non-events distribution is calculated so that the expected outcome proportion matches the anticipated \code{prevalence} in the validation sample, and the mean for the events distribution follows from this.  Default \code{FALSE}.  NB: this approach makes strong assumptions of normality and equal variances in each outcome group, which may be unrealistic in most situations.  In pmvalsampsize 0.1.0 \code{lpcstat} took a starting value for the non-events mean; a numeric value is still accepted, with a warning, and treated as \code{TRUE}.}
 
-\item{tolerance}{for use with \code{lpcstat} option.  Sets the tolerance for agreement between the simulated and expected event proportion during the iterative procedure for calculating the mean for the non-events distribution.}
-
-\item{increment}{for use with \code{lpcstat} option.  Sets increment by which to iterate the value of the mean for the non-events distribution.  Trial and error may be necessary as it is dependent on how close the initial input for the non-event mean in \code{lpcstat} is to the required value.  If the process takes a particularly long time then the user could try an alternative increment value, or an alternative non-event mean value in \code{lpcstat}.  The \code{trace} option may be useful in such circumstances.}
+\item{tolerance, increment, trace}{Retired in pmsampsize 2.0.0, and ignored with a warning if supplied.  These controlled the iterative search for the non-events mean used by \code{lpcstat} in pmvalsampsize 0.1.0, which is now calculated exactly.}
 
 \item{oeseincrement}{sets the increment by which to iterate when identifying the SE(ln(OE)) to meet the target CI width specified for OE.  The default iteration increment=0.0001.  In the majority of cases this will be suitably small to ensure a precise SE is identified.  The user should check the output table to ensure that the target CI width has been attained and adjust the increment if necessary.}
 
 \item{graph}{specifies that a histogram of the simulated LP distribution for criteria 2 is produced.  The graph also details summary statistics for the simulated distribution.  Useful option for checking the simulated LP distribution against the source of input parameters.  Also useful for reporting at publication.}
-
-\item{trace}{for use with \code{lpcstat} option.  Specifies that a trace of the values obtained in each iteration when identifying the non-event mean is output.  Useful when finding the appropriate values for \code{lpcstat} & \code{increment()} is proving difficult!}
 
 \item{prevalence}{specifies the overall outcome proportion (for a prognostic model) or overall prevalence (for a diagnostic model) expected within the model validation sample.  This is a \bold{required input}.  This should be derived based on previous studies in the same population or directly from the validation sample if to hand.}
 
@@ -137,11 +133,11 @@ pmvalsampsize(type = "b", prevalence = 0.018, cstatistic = 0.8,
 lpbeta = c(0.5,0.5), oeciwidth = 1, simobs = 1000)
 
 # Finally, we can use the anticipated c-statistic to simulate the event and
-# non-event distributions assuming normality and common variances.  We input
-# a starting value for the mean of the non-events distribution as below:
+# non-event distributions assuming normality and common variances.  The mean
+# of the non-events distribution is calculated to match the prevalence:
 
 pmvalsampsize(type = "b", prevalence = 0.018, cstatistic = 0.8,
-lpcstat = -4.7, oeciwidth = 1, seed = 1234, simobs = 10000)
+lpcstat = TRUE, oeciwidth = 1, seed = 1234, simobs = 10000)
 
 
 

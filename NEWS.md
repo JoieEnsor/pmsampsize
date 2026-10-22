@@ -2,6 +2,10 @@ pmsampsize v2.0.0 (development version)
 =============================================
 * `pmvalsampsize()` (sample size for external validation of a prediction model; previously the standalone pmvalsampsize package, v0.1.0, released 2023-11-14) is now part of pmsampsize. Existing `pmvalsampsize()` calls give the same results.
 * `pmvalsampsize()` no longer depends on pROC. The c-statistic of the simulated data for the `lpcstat` option is now computed internally (same value), and `simulated_data_cstat` in the returned object is now a plain number rather than a pROC `auc` object.
+* `pmvalsampsize()` `lpcstat` option rewritten. The mean of the non-events LP distribution is now calculated exactly from `prevalence` and `cstatistic`, instead of by an iterative simulation search from a user-supplied start value. This fixes cases where the search never finished (e.g. `prevalence = 0.2, cstatistic = 0.75`). Results for `lpcstat` change slightly because the mean is now more precise (e.g. the help-file example: criteria 2 sample size 16,175 -> 16,270).
+* `lpcstat` is now logical (`lpcstat = TRUE` selects the option; default `FALSE`) and requires `cstatistic` greater than 0.5. A numeric value, as used in 0.1.0, is still accepted and treated as `TRUE`, with a warning.
+* `pmvalsampsize()` arguments `tolerance`, `increment` and `trace` are retired (they only controlled the old `lpcstat` search). They are ignored, with a warning, if supplied, and will be removed in a future major version.
+* The `lpcstat` iteration messages are replaced by a single message giving the calculated non-events mean and the simulated vs target prevalence.
 
 pmsampsize v1.1.3 (Release date: 2023-12-05)
 =============================================

@@ -1,4 +1,4 @@
-pmvalsampsize_bin <- function(prevalence,cstatistic,oe,oeciwidth,cslope,csciwidth,cstatciwidth,simobs,lpnormal,lpbeta,lpcstat,tolerance,increment,oeseincrement,seed,graph,trace,sensitivity,specificity,threshold,nbciwidth,nbseincrement) {
+pmvalsampsize_bin <- function(prevalence,cstatistic,oe,oeciwidth,cslope,csciwidth,cstatciwidth,simobs,lpnormal,lpbeta,lpcstat,oeseincrement,seed,graph,sensitivity,specificity,threshold,nbciwidth,nbseincrement) {
 
 #############################
 
@@ -73,18 +73,13 @@ pmvalsampsize_bin <- function(prevalence,cstatistic,oe,oeciwidth,cslope,csciwidt
     P <- rbeta(n=simobs, shape1=lpbeta[1], shape2=lpbeta[2])
     LP <- log(P/(1-P))
   }
-  else if (!is.na(lpcstat[1])) {
+  else if (lpcstat) {
     lpdist <- "cstat"
-    m2 <- lpcstat[1]
     var <- 2*(qnorm(cstatistic)^2)
 
-    # m2<-0.8
-    # cstatistic<-0.8
-    # var<- 2*(qnorm(cstatistic)^2)
-    # simobs<-1000
-    # prevalence <- 0.2
-    # tolerance <- 0.0005
-    # increment <- 0.1
+    # non-events LP ~ N(m2, var), events LP ~ N(m2 + var, var): find m2 so that
+    # the expected outcome proportion equals the input prevalence
+    m2 <- .lpcstat_m2(prevalence = prevalence, cstatistic = cstatistic)
 
     outcome <- rbinom(n=simobs, size=1, prob=prevalence)
 
@@ -93,147 +88,10 @@ pmvalsampsize_bin <- function(prevalence,cstatistic,oe,oeciwidth,cslope,csciwidt
 
     LP[outcome==1] <- LP2[outcome==1]
 
-    # df <- data.frame(outcome, LP2, LP)
-    # df$LP[df$outcome==1] <- df$LP2[df$outcome==1]
-
     P <- exp(LP)/(1+exp(LP))
     outcome_test <- rbinom(n=simobs, size=1, prob=P)
-    diff <- abs(prevalence - mean(outcome_test))
 
-    if (trace==TRUE) {
-      if (diff>tolerance) {
-          message("Proportion of observed outcome events does not match input prevalence","\n","Beginning iterative approach ...","\n")
-
-        message("-------------- TRACE ON --------------","\n")
-
-        n <- 1
-        diff_new <- diff      # ask em about a name including a local
-        m2 <- m2+increment
-
-        outcome <- rbinom(n=simobs, size=1, prob=prevalence)
-        LP <- rnorm(n=simobs, mean=m2, sd=sqrt(var))
-        LP2 <- rnorm(n=simobs, mean=m2+var, sd=sqrt(var))
-
-        LP[outcome==1] <- LP2[outcome==1]
-
-        P <- exp(LP)/(1+exp(LP))
-        outcome_test <- rbinom(n=simobs, size=1, prob=P)
-
-        #n <- n+1
-
-        diff_new <- abs(prevalence - mean(outcome_test))
-
-        if (diff_new < diff) {
-          while (diff_new > tolerance) {
-            m2 <- m2+increment
-
-            outcome <- rbinom(n=simobs, size=1, prob=prevalence)
-            LP <- rnorm(n=simobs, mean=m2, sd=sqrt(var))
-            LP2 <- rnorm(n=simobs, mean=m2+var, sd=sqrt(var))
-
-            LP[outcome==1] <- LP2[outcome==1]
-
-            P <- exp(LP)/(1+exp(LP))
-            outcome_test <- rbinom(n=simobs, size=1, prob=P)
-
-            diff_new <- abs(prevalence - mean(outcome_test))
-
-            message("Proportion of outcome events under simulation =",mean(outcome_test),"\n","Target prevalence =",prevalence,"\n","Mean in non-event group = ",m2,"\n")
-          }
-        }
-        else {
-          while (diff_new > tolerance) {
-            m2 <- m2-increment
-
-            outcome <- rbinom(n=simobs, size=1, prob=prevalence)
-            LP <- rnorm(n=simobs, mean=m2, sd=sqrt(var))
-            LP2 <- rnorm(n=simobs, mean=m2+var, sd=sqrt(var))
-
-            LP[outcome==1] <- LP2[outcome==1]
-
-            P <- exp(LP)/(1+exp(LP))
-            outcome_test <- rbinom(n=simobs, size=1, prob=P)
-
-            diff_new <- abs(prevalence - mean(outcome_test))
-
-            message("Proportion of outcome events under simulation =",mean(outcome_test),"\n","Target prevalence =",prevalence,"\n","Mean in non-event group = ",m2,"\n")
-          }
-        }
-
-        message("-------------- TRACE OFF --------------","\n")
-        message("Proportion of observed outcome events is within tolerance","\n","Proportion of outcome events under simulation =",mean(outcome_test),"\n","Target prevalence =",prevalence,"\n","Mean in non-event group = ",m2,"\n","\n")
-      }
-      else {
-        message("Proportion of observed outcome events is within tolerance","\n","Proportion of outcome events under simulation =",mean(outcome_test),"\n","Target prevalence =",prevalence,"\n","Mean in non-event group = ",m2,"\n","\n")
-      }
-
-    }
-    else {
-      if (diff > tolerance) {
-          message("Proportion of observed outcome events does not match input prevalence","\n","Beginning iterative approach ...","\n")
-
-          n <- 1
-          diff_new <- diff
-          m2 <- m2+increment
-
-          outcome <- rbinom(n=simobs, size=1, prob=prevalence)
-          LP <- rnorm(n=simobs, mean=m2, sd=sqrt(var))
-          LP2 <- rnorm(n=simobs, mean=m2+var, sd=sqrt(var))
-
-          LP[outcome==1] <- LP2[outcome==1]
-
-          P <- exp(LP)/(1+exp(LP))
-          outcome_test <- rbinom(n=simobs, size=1, prob=P)
-
-          #n <- n+1
-
-          diff_new <- abs(prevalence - mean(outcome_test))
-
-          if (diff_new < diff) {
-            while (diff_new > tolerance) {
-              m2 <- m2+increment
-
-              outcome <- rbinom(n=simobs, size=1, prob=prevalence)
-              LP <- rnorm(n=simobs, mean=m2, sd=sqrt(var))
-              LP2 <- rnorm(n=simobs, mean=m2+var, sd=sqrt(var))
-
-              LP[outcome==1] <- LP2[outcome==1]
-
-              P <- exp(LP)/(1+exp(LP))
-              outcome_test <- rbinom(n=simobs, size=1, prob=P)
-
-              diff_new <- abs(prevalence - mean(outcome_test))
-
-
-            }
-          }
-          else {
-            while (diff_new > tolerance) {
-              m2 <- m2-increment
-
-              outcome <- rbinom(n=simobs, size=1, prob=prevalence)
-              LP <- rnorm(n=simobs, mean=m2, sd=sqrt(var))
-              LP2 <- rnorm(n=simobs, mean=m2+var, sd=sqrt(var))
-
-              LP[outcome==1] <- LP2[outcome==1]
-
-              P <- exp(LP)/(1+exp(LP))
-              outcome_test <- rbinom(n=simobs, size=1, prob=P)
-
-              diff_new <- abs(prevalence - mean(outcome_test))
-
-
-            }
-          }
-
-
-          message("Proportion of observed outcome events is within tolerance","\n","Proportion of outcome events under simulation =",mean(outcome_test),"\n","Target prevalence =",prevalence,"\n","Mean in non-event group = ",m2,"\n","\n")
-        }
-        else {
-          message("Proportion of observed outcome events is within tolerance","\n","Proportion of outcome events under simulation =",mean(outcome_test),"\n","Target prevalence =",prevalence,"\n","Mean in non-event group = ",m2,"\n","\n")
-        }
-
-      }
+    message("LP distribution from c-statistic (normal events & non-events, common variance) - mean in non-event group=",signif(m2,6),"\n","Proportion of outcome events under simulation=",mean(outcome_test),", target prevalence=",prevalence,"\n")
 
     # check C-statistic is correct
     simulated_data_cstat <- .fast_auc(P, outcome_test)
@@ -387,7 +245,7 @@ if (no_nb==TRUE) {
   res[4,4] <- res[res_sort[4],4]
 
   # returns
-  if (!is.na(lpcstat[1])) {
+  if (lpcstat) {
     out <- list(results_table = res,
                 sample_size = nfinal,
                 events = efinal,
@@ -446,7 +304,7 @@ else {
   res[5,4] <- res[res_sort[5],4]
 
   # returns
-  if (!is.na(lpcstat[1])) {
+  if (lpcstat) {
   out <- list(results_table = res,
               sample_size = nfinal,
               events = efinal,
@@ -499,4 +357,25 @@ else {
   }
 }
 
+}
+
+# lpcstat: mean of the non-events LP distribution (m2), assuming normal LP
+# distributions in events and non-events with common variance
+# var = 2 * qnorm(cstatistic)^2 (events mean m2 + var). m2 solves
+# prevalence * E[expit(N(m2 + var, var))] + (1 - prevalence) * E[expit(N(m2, var))] = prevalence,
+# which increases with m2, so the root is unique.
+.lpcstat_m2 <- function(prevalence, cstatistic) {
+  var <- 2*(qnorm(cstatistic)^2)
+  sd <- sqrt(var)
+  # E[expit(N(mu, var))], integrated on the standard normal scale
+  mean_expit <- function(mu) {
+    integrate(function(z) plogis(mu + sd*z) * dnorm(z), -Inf, Inf,
+              rel.tol = 1e-10)$value
+  }
+  expected_prev <- function(m2) {
+    prevalence*mean_expit(m2 + var) + (1-prevalence)*mean_expit(m2) - prevalence
+  }
+  start <- qlogis(prevalence)
+  uniroot(expected_prev, c(start - var - 1, start), extendInt = "upX",
+          tol = 1e-10)$root
 }
