@@ -1,0 +1,346 @@
+---
+title: "Getting Started with pmgen: DVT Prediction Model Example"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with pmgen: DVT Prediction Model Example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  fig.width  = 7,
+  fig.height = 5
+)
+# A small n_sims keeps the vignette quick to build.
+# Use 1000 (or higher) in practice.
+n_sims_vignette <- 50L
+# Plots need ggplot2 and scales (suggested packages)
+has_plot_pkgs <- requireNamespace("ggplot2", quietly = TRUE) &&
+  requireNamespace("scales", quietly = TRUE)
+```
+
+## Overview
+
+The `pmgen_*()` functions implement the generalised simulation-based framework
+for determining sample sizes when developing clinical prediction models (CPMs),
+as described by Riley et al. Unlike the closed-form criteria in `pmsampsize()`,
+the generalised approach works for any supervised learning method and provides
+rich summaries of how model performance degrades at different sample sizes.
+
+This vignette walks through a complete sample size calculation for a binary
+outcome CPM using the DVT (deep vein thrombosis) dataset. The workflow has four
+steps:
+
+1. **Specify a reference model**: calibrate a logistic model to your target
+   prevalence and c-statistic using the joint predictor distribution from your
+   data.
+2. **Generate a target population**: create a large evaluation dataset from the
+   reference model.
+3. **Run the simulation**: repeatedly sample development datasets of varying
+   sizes, fit a model, and evaluate performance against the target population.
+4. **Summarise and plot**: identify the minimum sample size meeting your
+   criteria and visualise how performance changes with N.
+
+## The DVT Example
+
+We want to develop a logistic regression model to predict DVT diagnosis from 11
+binary clinical predictors. The dataset (`dvt_data`) contains 9,805 patients
+from seven studies and has a DVT prevalence of approximately 21%. A logistic
+regression model on this data achieves an AUC (c-statistic) of about 0.79.
+
+We will use these observed values to specify a **reference model**, a
+hypothetical "true" model representing the best achievable performance given the
+predictor set, and then ask: at what sample size does a newly developed model
+closely approximate this reference?
+
+```{r load}
+library(pmsampsize)
+
+data(dvt_data)
+
+predictors <- c("male", "OCuse", "malignancy", "surgery", "ab_leg_trauma",
+                 "vein_distension", "calf_diff", "ab_ddimer",
+                 "pregnancy", "immobile", "clotting")
+
+cat("Rows:", nrow(dvt_data), "\n")
+cat("DVT prevalence:", round(mean(dvt_data$dvt), 3), "\n")
+```
+
+## Step 1: Specify the Reference Model
+
+`pmgen_reference()` calibrates a logistic model to a target prevalence and
+c-statistic. We supply `dvt_data` as `joint_data`; this represents the joint
+distribution of predictors in the target population, and is used for the
+bisection calibration.
+
+We assume equal relative log-odds weights for all 11 predictors (`coef = NULL`),
+a simple default when we do not have prior knowledge of individual predictor
+effects. Where the relative sizes of the effects are known, supply them as
+`coef`: the equal-weights model can give somewhat different results.
+
+```{r reference}
+ref <- pmgen_reference(
+  joint_data  = dvt_data,
+  predictors  = predictors,
+  prevalence  = 0.21,
+  cstatistic  = 0.78,
+  tolerance   = 0.005,
+  seed        = 42
+)
+
+ref
+```
+
+The `ref` object contains the calibrated intercept and scaled coefficients and
+the achieved prevalence and c-statistic.
+
+## Step 2: Generate the Target Population
+
+The target population is a large dataset sampled from the joint predictor
+distribution and assigned true risks using the reference model. All simulated
+development models are evaluated against this fixed population, so performance
+estimates are comparable across simulation iterations. The rows of `joint_data`
+not used for the target population form the development pool from which
+development datasets are drawn, so `n` must be smaller than
+`nrow(joint_data)`. In practice use as large a target population as the data
+allow (e.g. 100,000 when `joint_data` is large or synthetic).
+
+```{r target_pop}
+target_pop <- pmgen_target_population(
+  ref_model = ref,
+  n         = 5000,
+  seed      = 42
+)
+
+cat("Target population: n =", nrow(target_pop$data), "\n")
+cat("Development pool:  n =", nrow(target_pop$dev_pool), "\n")
+cat("True risk range:", round(range(target_pop$data$p_true), 3), "\n")
+cat("Simulated prevalence:", round(mean(target_pop$data$outcome), 3), "\n")
+```
+
+## Step 3: Run the Simulation
+
+`pmgen_simulate()` is the core function. For each value of N in the `N` vector,
+it:
+
+1. Samples a development dataset of size N (with replacement from the
+   development pool).
+2. Simulates binary outcomes using the reference model's true risks.
+3. Fits the chosen model on the development data.
+4. Predicts on the target population.
+5. Computes all requested performance metrics.
+
+This repeats `n_sims` times (default 1,000). Here we use `n_sims = 50` so the
+vignette builds quickly; use at least 500 to 1,000 in practice.
+
+We evaluate logistic regression across a range of sample sizes.
+
+```{r simulate}
+result <- pmgen_simulate(
+  ref_model   = ref,
+  target_pop  = target_pop,
+  N           = c(100, 200, 400, 600, 900, 1200),
+  n_sims             = n_sims_vignette,
+  method             = "logistic",
+  metrics            = c("cstat", "cal_slope", "mape", "net_benefit"),
+  threshold          = 0.2,    # clinical decision threshold for net benefit
+  store_predictions  = TRUE,
+  seed               = 42,
+  verbose            = FALSE
+)
+
+result
+```
+
+Penalised methods are also built in: `method = "ridge"`, `"lasso"` or
+`"elasticnet"` (these need the glmnet package) and `"firth"` (needs logistf).
+You can also supply your own fitting function; see `?pmgen_simulate`.
+
+## Parallelisation
+
+If the furrr package is installed, `pmgen_simulate()` runs its simulations with
+`furrr::future_map()`, so it respects whatever `future` plan is active. On a
+multicore machine you can cut runtime roughly in proportion to the number of
+cores by setting a parallel plan before the call. Without furrr, or without a
+parallel plan, the simulations run sequentially.
+
+### Shared-memory parallelism (single machine)
+
+```{r parallel_multisession, eval=FALSE}
+library(future)
+
+# Use all available cores (or set workers = N for a specific number)
+plan(multisession)
+
+result_par <- pmgen_simulate(
+  ref_model   = ref,
+  target_pop  = target_pop,
+  N           = c(100, 200, 400, 600, 900, 1200),
+  n_sims      = 1000,
+  method      = "logistic",
+  metrics     = c("cstat", "cal_slope", "mape", "net_benefit"),
+  threshold   = 0.2,
+  seed        = 42,
+  verbose     = FALSE
+)
+
+# Always restore sequential execution when done
+plan(sequential)
+```
+
+Parallelism is across simulation draws within each N value. With `n_sims = 1000`
+and 4 cores, wall time is approximately 4 times faster than sequential.
+
+### Limiting the number of workers
+
+```{r parallel_workers, eval=FALSE}
+plan(multisession, workers = 4)  # cap at 4 cores regardless of machine size
+
+result_par <- pmgen_simulate(
+  ref_model  = ref,
+  target_pop = target_pop,
+  N          = c(100, 200, 400, 600, 900, 1200),
+  n_sims     = 1000,
+  method     = "logistic",
+  seed       = 42,
+  verbose    = FALSE
+)
+
+plan(sequential)
+```
+
+### Reproducibility under parallelism
+
+Reproducibility is maintained through per-draw seeds computed before the
+parallel loop. The same `seed` argument will give identical results whether
+you run sequentially or in parallel:
+
+```{r parallel_repro, eval=FALSE}
+plan(sequential)
+result_seq <- pmgen_simulate(ref, target_pop, N = c(200, 500), n_sims = 50,
+                             method = "logistic", seed = 1)
+
+plan(multisession, workers = 2)
+result_par <- pmgen_simulate(ref, target_pop, N = c(200, 500), n_sims = 50,
+                             method = "logistic", seed = 1)
+plan(sequential)
+
+# Summaries are identical
+all.equal(summary(result_seq), summary(result_par))
+```
+
+### Choosing the right number of workers
+
+| Scenario | Recommendation |
+|---|---|
+| Interactive session, quick exploration | `plan(sequential)`: no overhead |
+| Final analysis, `n_sims` of 500 or more, single machine | `plan(multisession)` (all cores) |
+| Large grid of N values, HPC cluster | `plan(cluster)`: see `?future::cluster` |
+| Memory-constrained machine | `plan(multisession, workers = 2)` |
+
+Each worker loads a copy of `target_pop` and `ref_model` into memory. For a
+`target_pop` of 50,000 rows and 11 predictors this is modest (~10 MB per
+worker); for 500,000 rows consider capping workers to avoid memory pressure.
+
+## Step 4: Summarise Results
+
+`summary()` produces a table of performance summaries for each N, matching the
+structure reported in Riley et al. For each metric it shows the mean, standard
+deviation, 2.5th and 97.5th percentiles, and the mean degradation versus the
+reference model.
+
+```{r summary}
+summary(result)
+```
+
+## Step 5: Find the Minimum Sample Size
+
+`pmgen_min_n()` scans across N values and reports the minimum N at which all
+specified criteria are met. The criteria below follow the guidance in Riley et
+al.:
+
+- **Calibration slope**: P(0.9 <= slope <= 1.1) >= 0.90
+- **C-statistic degradation**: mean degradation vs. reference <= 0.025
+- **MAPE**: mean absolute prediction error <= 0.05
+
+```{r min_n}
+pmgen_min_n(
+  result,
+  criteria = list(
+    cal_slope  = list(range = c(0.9, 1.1), min_prob = 0.90),
+    cstat      = list(max_abs_deg_mean = 0.025),
+    mape       = list(max_mean = 0.05)
+  )
+)
+```
+
+## Visualisation
+
+The plots need the ggplot2 and scales packages.
+
+### Assurance curves
+
+The assurance plot shows, for each metric criterion, how the probability of
+meeting that criterion changes with N. The recommended minimum N is where the
+curve crosses the 0.9 threshold.
+
+```{r plot_assurance, eval=has_plot_pkgs}
+plot(result, type = "assurance")
+```
+
+### Degradation curves
+
+The degradation plot shows mean performance (and 95% simulation range) vs. N
+for each metric, relative to the reference model.
+
+```{r plot_degradation, eval=has_plot_pkgs}
+plot(result, type = "degradation")
+```
+
+### Prediction instability
+
+The instability plot illustrates how individual-level predicted risks vary
+across the simulation draws at a given N. Each point is one target-population
+individual; the vertical axis shows the width of their 95% interval of
+predicted risks.
+
+```{r plot_instability, eval=has_plot_pkgs}
+plot(result, type = "instability", N = 400)
+```
+
+### Calibration instability
+
+The calibration instability plot overlays calibration curves from a sample of
+the simulation draws, showing the "fan" of uncertainty that shrinks as N grows.
+
+```{r plot_calibration, eval=has_plot_pkgs}
+plot(result, type = "calibration", N = 400)
+```
+
+## No Data? Using Distributional Assumptions
+
+If you do not have pilot data, you can specify marginal predictor distributions
+directly:
+
+```{r dist_assumptions, eval=FALSE}
+ref_nodta <- pmgen_reference(
+  joint_data = list(
+    x1 = list(dist = "bernoulli", prob = 0.45),  # e.g., male sex
+    x2 = list(dist = "bernoulli", prob = 0.20),  # e.g., malignancy
+    x3 = list(dist = "bernoulli", prob = 0.30)   # etc.
+    # ... specify all 11 predictors
+  ),
+  prevalence = 0.21,
+  cstatistic = 0.78,
+  n_synth    = 500000,
+  seed       = 42
+)
+```
+
+This assumes all predictors are independent. The article "Specifying
+Distributional Assumptions (No Pilot Data)" on the package website gives
+guidance on when this is appropriate and how sensitive results are to the
+independence assumption.

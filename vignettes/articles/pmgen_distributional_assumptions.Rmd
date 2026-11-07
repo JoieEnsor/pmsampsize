@@ -1,0 +1,234 @@
+---
+title: "Specifying Distributional Assumptions (No Pilot Data)"
+output: rmarkdown::html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  fig.width  = 7,
+  fig.height = 5
+)
+# Use a small n_sims when knitting locally for speed.
+# Set to 1000 (or higher) for final/published output.
+n_sims_vignette <- 50L
+```
+
+## Motivation
+
+The standard `pmgen_*()` workflow uses a pilot dataset to characterise the joint
+predictor distribution (see `vignette("pmgen", package = "pmsampsize")`). But pilot data is
+not always available: a researcher may only know their anticipated target
+prevalence and the expected c-statistic of a well-developed model, along with
+approximate marginal predictor frequencies from the literature or clinical
+knowledge.
+
+This vignette shows how to run a full sample size assessment using **only
+distributional assumptions** — no individual-level data required.
+
+The price of this convenience is the **independence assumption**: predictors are
+sampled independently from their marginal distributions. When predictors are
+correlated in reality, the required sample size may shift. The direction and
+magnitude of this shift depends on the correlation structure; previous work
+suggests the independence assumption can be a reasonable approximation when
+focusing on measures of model degradation such as expected calibration slope and
+MAPE (Riley et al.). Users should treat any difference from a data-based
+calculation as a source of uncertainty and, if possible, perform a sensitivity
+analysis by varying the assumed marginal probabilities.
+
+## DVT example: specifying predictors as Bernoulli distributions
+
+To make results directly comparable to `vignette("pmgen", package = "pmsampsize")`, we specify
+the 11 DVT predictors using their empirical marginal prevalences from `dvt_data`
+— exactly as if we had read these from a published study rather than from our own
+data.
+
+The prevalences below were derived from `colMeans(dvt_data[predictors])`:
+
+| Predictor | Prevalence |
+|---|---|
+| male | 0.364 |
+| OCuse | 0.068 |
+| malignancy | 0.090 |
+| surgery | 0.128 |
+| ab_leg_trauma | 0.842 |
+| vein_distension | 0.189 |
+| calf_diff | 0.348 |
+| ab_ddimer | 0.617 |
+| pregnancy | 0.148 |
+| immobile | 0.263 |
+| clotting | 0.168 |
+
+```{r load}
+library(pmsampsize)
+```
+
+## Step 1: Specify the reference model from distributional assumptions
+
+When `joint_data` is a **named list**, each element specifies the marginal
+distribution of one predictor. For binary predictors use
+`list(dist = "bernoulli", prob = p)`.
+
+We pass `n_synth = 500000` so the large synthetic population used for bisection
+is of sufficient size for accurate calibration. This is the key parameter that
+controls accuracy in the no-data pathway — larger values give better calibration
+but take longer.
+
+```{r reference_nodta}
+ref_nodta <- pmgen_reference(
+  joint_data = list(
+    male            = list(dist = "bernoulli", prob = 0.364),
+    OCuse           = list(dist = "bernoulli", prob = 0.068),
+    malignancy      = list(dist = "bernoulli", prob = 0.090),
+    surgery         = list(dist = "bernoulli", prob = 0.128),
+    ab_leg_trauma   = list(dist = "bernoulli", prob = 0.842),
+    vein_distension = list(dist = "bernoulli", prob = 0.189),
+    calf_diff       = list(dist = "bernoulli", prob = 0.348),
+    ab_ddimer       = list(dist = "bernoulli", prob = 0.617),
+    pregnancy       = list(dist = "bernoulli", prob = 0.148),
+    immobile        = list(dist = "bernoulli", prob = 0.263),
+    clotting        = list(dist = "bernoulli", prob = 0.168)
+  ),
+  prevalence = 0.21,
+  cstatistic = 0.78,
+  tolerance  = 0.005,
+  n_synth    = 500000,
+  seed       = 42
+)
+
+ref_nodta
+```
+
+## Step 2: Generate target population and run simulation
+
+The rest of the workflow is identical to the data-based pathway.
+
+```{r target_pop_nodta}
+target_pop_nodta <- pmgen_target_population(
+  ref_model = ref_nodta,
+  n         = 50000,
+  seed       = 42
+)
+```
+
+```{r simulate_nodta}
+result_nodta <- pmgen_simulate(
+  ref_model  = ref_nodta,
+  target_pop = target_pop_nodta,
+  N          = c(100, 200, 400, 600, 900, 1200),
+  n_sims     = n_sims_vignette,
+  method     = "logistic",
+  metrics    = c("cstat", "cal_slope", "mape"),
+  seed       = 42,
+  verbose    = FALSE
+)
+
+result_nodta
+```
+
+## Step 3: Minimum sample size
+
+```{r min_n_nodta}
+pmgen_min_n(
+  result_nodta,
+  criteria = list(
+    cal_slope = list(range = c(0.9, 1.1), min_prob = 0.90),
+    cstat     = list(max_abs_deg_mean = 0.025),
+    mape      = list(max_mean = 0.05)
+  )
+)
+```
+
+## Comparison with the data-based result
+
+We now run the same assessment with the full `dvt_data` dataset (as in
+`vignette("pmgen", package = "pmsampsize")`) and compare minimum N estimates.
+
+```{r reference_data}
+data(dvt_data)
+
+predictors <- c("male", "OCuse", "malignancy", "surgery", "ab_leg_trauma",
+                 "vein_distension", "calf_diff", "ab_ddimer",
+                 "pregnancy", "immobile", "clotting")
+
+ref_data <- pmgen_reference(
+  joint_data  = dvt_data,
+  predictors  = predictors,
+  prevalence  = 0.21,
+  cstatistic  = 0.78,
+  tolerance   = 0.005,
+  seed        = 42
+)
+
+target_pop_data <- pmgen_target_population(ref_data, n = 5000, seed = 42)
+
+result_data <- pmgen_simulate(
+  ref_model  = ref_data,
+  target_pop = target_pop_data,
+  N          = c(100, 200, 400, 600, 900, 1200),
+  n_sims     = n_sims_vignette,
+  method     = "logistic",
+  metrics    = c("cstat", "cal_slope", "mape"),
+  seed       = 42,
+  verbose    = FALSE
+)
+```
+
+```{r compare_min_n}
+cat("=== Data-based approach ===\n")
+pmgen_min_n(
+  result_data,
+  criteria = list(
+    cal_slope = list(range = c(0.9, 1.1), min_prob = 0.90),
+    cstat     = list(max_abs_deg_mean = 0.025),
+    mape      = list(max_mean = 0.05)
+  )
+)
+
+cat("\n=== Distributional assumptions (independent marginals) ===\n")
+pmgen_min_n(
+  result_nodta,
+  criteria = list(
+    cal_slope = list(range = c(0.9, 1.1), min_prob = 0.90),
+    cstat     = list(max_abs_deg_mean = 0.025),
+    mape      = list(max_mean = 0.05)
+  )
+)
+```
+
+Small differences between the two approaches arise from the independence
+assumption: in `dvt_data` some predictors are correlated (e.g., `ab_ddimer`
+tends to be elevated in patients with malignancy). The independence assumption
+removes these correlations from the synthetic population, which can slightly alter
+the effective dimensionality of the predictor space and hence the required N.
+
+## Visualisation
+
+```{r plot_degradation}
+plot(result_nodta, type = "degradation")
+```
+
+```{r plot_assurance}
+plot(result_nodta, type = "assurance")
+```
+
+## Recommendations
+
+- **Prefer the data-based approach** when any pilot data are available, even a
+  small convenience sample. Even moderate correlations can shift required N by
+  10–20%.
+- **Use distributional assumptions** when no data are available. Set marginal
+  probabilities from published prevalence estimates or clinical knowledge.
+- **Acknowledge uncertainty.** The independence assumption is a modelling choice.
+  When reporting results, note that the true required N may be higher or lower
+  depending on predictor correlations.
+- **Sensitivity analysis.** Consider re-running with marginal probabilities varied
+  by ±0.05 to quantify how sensitive the required N is to uncertainty in the
+  assumed prevalences.
+
+## Session info
+
+```{r sessioninfo}
+sessionInfo()
+```

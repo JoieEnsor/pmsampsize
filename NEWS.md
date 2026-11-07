@@ -6,6 +6,15 @@ pmsampsize v2.0.0 (development version)
 * `lpcstat` is now logical (`lpcstat = TRUE` selects the option; default `FALSE`) and requires `cstatistic` greater than 0.5. A numeric value, as used in 0.1.0, is still accepted and treated as `TRUE`, with a warning.
 * `pmvalsampsize()` arguments `tolerance`, `increment` and `trace` are retired (they only controlled the old `lpcstat` search). They are ignored, with a warning, if supplied, and will be removed in a future major version.
 * The `lpcstat` iteration messages are replaced by a single message giving the calculated non-events mean and the simulated vs target prevalence.
+* New `pmgen_*()` functions for the generalised, simulation-based sample size approach for developing a clinical prediction model (binary outcomes), for any model-fitting method:
+  * `pmgen_reference()` specifies a reference model, calibrated to a target prevalence and c-statistic, from data or from distributional assumptions.
+  * `pmgen_target_population()` generates the target population on which the developed models are evaluated.
+  * `pmgen_simulate()` simulates development datasets at each candidate sample size, fits the model (built in: logistic, ridge, lasso, elastic net, Firth; or a user-supplied fitting function) and evaluates its performance (c-statistic, calibration slope and intercept, O:E ratio, MAPE, RMSPE, Brier score, net benefit, ERVSI).
+  * `pmgen_min_n()` gives the smallest sample size meeting user-specified criteria; `pmgen_compare()` compares two sets of results.
+  * `summary()`, `print()` and `plot()` methods for the results.
+  * `dvt_data`: an example dataset (simulated DVT data, 9,805 patients, 11 binary predictors).
+* New dependencies: MASS, mvtnorm and rlang (Imports). Packages needed only for particular features are suggested, not required: glmnet (ridge, lasso, elastic net), logistf (Firth), ggplot2 and scales (plots), furrr and future (parallel simulation). Results are the same with or without furrr.
+* pmsampsize now requires R >= 4.0.0.
 
 pmsampsize v1.1.3 (Release date: 2023-12-05)
 =============================================

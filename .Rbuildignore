@@ -3,3 +3,9 @@
 ^\.Rproj\.user$
 ^data-raw$
 ^scratch$
+^vignettes/articles$
+^vignettes/.*_cache$
+^vignettes/.*_files$
+^vignettes/\.build\.timestamp$
+^doc$
+^Meta$
