@@ -26,8 +26,9 @@
 #'   `"cal_slope"`, `"cal_intercept"`, `"oe_ratio"`, `"mape"`, `"rmspe"`,
 #'   `"brier"`, `"net_benefit"`, `"ervsi"`. Default:
 #'   `c("cstat", "cal_slope", "mape", "net_benefit")`.
-#' @param seed Integer or NULL. Sets the global RNG seed before the simulation
-#'   loop for reproducibility. Default `NULL`.
+#' @param seed Integer or NULL. Seed for reproducibility (see
+#'   *Reproducibility* in Details). Default `NULL`, which uses the session's
+#'   random number stream.
 #' @param store_predictions Logical. If `TRUE`, the full matrix of predicted
 #'   probabilities on the target population is stored for every simulation draw
 #'   (a `n_pop x n_sims` matrix per N value). Required for
@@ -47,8 +48,23 @@
 #' future::plan(future::sequential)  # reset afterwards
 #' ```
 #' Without a parallel plan, or without \pkg{furrr}, execution is sequential.
-#' Each simulation's seed is drawn before the loop, so results for a given
-#' `seed` are identical whether run sequentially or in parallel.
+#'
+#' **Reproducibility:** The simulations for each value of N use seeds that
+#' depend only on `seed`, that N value and `n_sims`. So, for a given `seed`:
+#' * results are identical whether run sequentially or in parallel, with any
+#'   \pkg{future} plan and any number of workers;
+#' * results for an N value do not depend on the other values in `N`: N = 400
+#'   gives the same results in `N = c(200, 400)` as in `N = c(400, 600)`, so
+#'   a grid can be extended without re-running the values already done;
+#' * increasing `n_sims` keeps the earlier simulations: the first 500
+#'   simulations with `n_sims = 1000` are the simulations with
+#'   `n_sims = 500`.
+#'
+#' Each simulation uses the session's random number generator settings
+#' ([base::RNGkind()]), including on parallel workers. Results for a given `seed`
+#' can differ between versions of R if the generators change.
+#' `pmgen_simulate()` changes the session's random number stream only by
+#' calling `set.seed(seed)` (if `seed` is given) and making one draw.
 #'
 #' The `"ridge"`, `"lasso"` and `"elasticnet"` methods need the \pkg{glmnet}
 #' package, and `"firth"` needs \pkg{logistf}.
@@ -183,7 +199,13 @@ pmgen_simulate <- function(ref_model,
                                           lp = target_pop$data$lp)
 
   # ---- Seed -------------------------------------------------------------------
+  # One key is drawn from `seed` (or from the session's stream if seed = NULL);
+  # each N's simulation seeds then depend only on the key, N and n_sims. The
+  # session's RNG kinds are passed to every simulation, so parallel workers
+  # (fresh R sessions with default kinds) use the same generator.
   if (!is.null(seed)) set.seed(seed)
+  seed_key  <- sample.int(.Machine$integer.max, 1L)
+  rng_kinds <- RNGkind()
 
   # ---- Main loop over N values ------------------------------------------------
   posterior_list <- vector("list", length(N))
@@ -203,8 +225,7 @@ pmgen_simulate <- function(ref_model,
       )
     }
 
-    # Seeds per draw: reproducible regardless of parallel backend
-    sim_seeds <- sample.int(.Machine$integer.max, n_sims)
+    sim_seeds <- .pmgen_sim_seeds(seed_key, n_val, n_sims)
 
     one_sim <- function(i) {
       run_single_sim(
@@ -218,15 +239,17 @@ pmgen_simulate <- function(ref_model,
         predictors        = predictors,
         outcome_col       = outcome_col,
         sim_seed          = sim_seeds[i],
+        rng_kinds         = rng_kinds,
         store_predictions = store_predictions
       )
     }
-    # Each simulation sets its own seed, so both routes give identical results
+    # Each simulation sets its own seed and RNG kinds, so every route (lapply,
+    # furrr under any future plan) gives identical results
     draws_list <- if (.use_furrr()) {
       furrr::future_map(seq_len(n_sims), one_sim,
                         .options = furrr::furrr_options(seed = NULL))
     } else {
-      .lapply_keep_rng(seq_len(n_sims), one_sim)
+      lapply(seq_len(n_sims), one_sim)
     }
 
     # Each element is list(metrics, p_hat, error, dropped); see run_single_sim()
@@ -310,9 +333,20 @@ pmgen_simulate <- function(ref_model,
 #' @noRd
 run_single_sim <- function(n_val, target_pop, ref_model, fit_fn, method_args,
                             metrics, threshold, predictors, outcome_col,
-                            sim_seed, store_predictions = FALSE) {
+                            sim_seed, rng_kinds = RNGkind(),
+                            store_predictions = FALSE) {
+  .with_rng_restored(
+    .run_single_sim(n_val, target_pop, ref_model, fit_fn, method_args,
+                    metrics, threshold, predictors, outcome_col,
+                    sim_seed, rng_kinds, store_predictions)
+  )
+}
 
-  set.seed(sim_seed)
+.run_single_sim <- function(n_val, target_pop, ref_model, fit_fn, method_args,
+                            metrics, threshold, predictors, outcome_col,
+                            sim_seed, rng_kinds, store_predictions) {
+
+  .set_seed_kinds(sim_seed, rng_kinds)
 
   dev_pool <- target_pop$dev_pool
   n_pool   <- nrow(dev_pool)
@@ -373,14 +407,46 @@ run_single_sim <- function(n_val, target_pop, ref_model, fit_fn, method_args,
   requireNamespace("furrr", quietly = TRUE)
 }
 
-#' lapply() that leaves the global RNG state as it found it
+#' Simulation seeds for one N value
 #'
-#' Each simulation calls set.seed(), which would otherwise move the session's
-#' random number stream and so change the seeds drawn for the next N. furrr
-#' evaluates the simulations without touching the session's stream, so
-#' restoring it here makes the sequential fallback give identical results.
+#' Depend only on `key` (drawn from the user's `seed`), `n_val` and `n_sims`,
+#' not on the other N values in the call or on the parallel backend. XOR with
+#' a fixed key is one-to-one in N, so different N values never share a seed
+#' stream. `sample.int()` returns its draws in sequence, so the first k seeds
+#' for a larger `n_sims` are the seeds for `n_sims = k`. Leaves the session's
+#' RNG state as it found it.
 #' @noRd
-.lapply_keep_rng <- function(X, FUN) {
+.pmgen_sim_seeds <- function(key, n_val, n_sims) {
+  .with_rng_restored({
+    set.seed(bitwXor(as.integer(key), as.integer(n_val)))
+    sample.int(.Machine$integer.max, n_sims)
+  })
+}
+
+#' set.seed() with the given RNGkind() values
+#'
+#' Parallel workers start with R's default RNG kinds, so each simulation sets
+#' the kinds of the calling session explicitly. set.seed() warns every time
+#' sample.kind = "Rounding" is used; that warning is not repeated here.
+#' @noRd
+.set_seed_kinds <- function(seed, rng_kinds) {
+  if (identical(rng_kinds[3], "Rounding")) {
+    suppressWarnings(set.seed(seed, kind = rng_kinds[1],
+                              normal.kind = rng_kinds[2],
+                              sample.kind = rng_kinds[3]))
+  } else {
+    set.seed(seed, kind = rng_kinds[1], normal.kind = rng_kinds[2],
+             sample.kind = rng_kinds[3])
+  }
+}
+
+#' Evaluate `expr`, then put the session's RNG state back as it was
+#'
+#' Restoring `.Random.seed` restores the RNG kinds as well as the stream. Used
+#' so that pmgen_simulate() changes the session's RNG state in the same way
+#' (set.seed(seed), then one draw for the key) on every backend.
+#' @noRd
+.with_rng_restored <- function(expr) {
   seed_env <- globalenv()
   old_seed <- get0(".Random.seed", envir = seed_env, inherits = FALSE)
   on.exit({
@@ -392,7 +458,7 @@ run_single_sim <- function(n_val, target_pop, ref_model, fit_fn, method_args,
       assign(".Random.seed", old_seed, envir = seed_env)
     }
   }, add = TRUE)
-  lapply(X, FUN)
+  expr
 }
 
 

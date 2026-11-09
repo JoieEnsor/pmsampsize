@@ -12,6 +12,7 @@ pmsampsize v2.0.0 (development version)
   * `pmgen_simulate()` simulates development datasets at each candidate sample size, fits the model (built in: logistic, ridge, lasso, elastic net, Firth; or a user-supplied fitting function) and evaluates its performance (c-statistic, calibration slope and intercept, O:E ratio, MAPE, RMSPE, Brier score, net benefit, ERVSI).
   * `pmgen_min_n()` gives the smallest sample size meeting user-specified criteria; `pmgen_compare()` compares two sets of results.
   * `summary()`, `print()` and `plot()` methods for the results.
+  * Reproducible with `seed`: each N value's simulations use seeds that depend only on `seed`, that N value and `n_sims`. Results are therefore identical sequentially or in parallel (any future plan, any number of workers, using the session's `RNGkind()` on the workers too), an N value gives the same results whatever other values are in `N`, and increasing `n_sims` keeps the earlier simulations.
   * `dvt_data`: an example dataset (simulated DVT data, 9,805 patients, 11 binary predictors).
 * New dependencies: MASS, mvtnorm and rlang (Imports). Packages needed only for particular features are suggested, not required: glmnet (ridge, lasso, elastic net), logistf (Firth), ggplot2 and scales (plots), furrr and future (parallel simulation). Results are the same with or without furrr.
 * pmsampsize now requires R >= 4.0.0.

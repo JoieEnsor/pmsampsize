@@ -214,9 +214,10 @@ plan(sequential)
 
 ### Reproducibility under parallelism
 
-Reproducibility is maintained through per-draw seeds computed before the
-parallel loop. The same `seed` argument will give identical results whether
-you run sequentially or in parallel:
+Each simulation sets its own seed, computed before the parallel loop from
+`seed`, the value of N and `n_sims`. The same `seed` therefore gives identical
+results whether you run sequentially or in parallel, with any number of
+workers:
 
 ```{r parallel_repro, eval=FALSE}
 plan(sequential)
@@ -231,6 +232,11 @@ plan(sequential)
 # Summaries are identical
 all.equal(summary(result_seq), summary(result_par))
 ```
+
+Because an N value's seeds do not depend on the other values in `N`, a grid
+can be extended later: `N = c(500, 800)` with `seed = 1` gives the same
+results for N = 500 as above. Likewise, increasing `n_sims` keeps the earlier
+simulations and adds new ones.
 
 ### Choosing the right number of workers
 

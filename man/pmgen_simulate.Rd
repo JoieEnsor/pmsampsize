@@ -55,8 +55,9 @@ probabilities on the target population is stored for every simulation draw
 Memory use: approximately \code{n_pop * n_sims * 8} bytes per N value (~750 MB
 for n_pop = 100,000 and n_sims = 1,000). Default \code{FALSE}.}
 
-\item{seed}{Integer or NULL. Sets the global RNG seed before the simulation
-loop for reproducibility. Default \code{NULL}.}
+\item{seed}{Integer or NULL. Seed for reproducibility (see
+\emph{Reproducibility} in Details). Default \code{NULL}, which uses the session's
+random number stream.}
 
 \item{verbose}{Logical. Print progress messages per N value. Default \code{TRUE}.}
 }
@@ -87,8 +88,25 @@ future::plan(future::sequential)  # reset afterwards
 }\if{html}{\out{</div>}}
 
 Without a parallel plan, or without \pkg{furrr}, execution is sequential.
-Each simulation's seed is drawn before the loop, so results for a given
-\code{seed} are identical whether run sequentially or in parallel.
+
+\strong{Reproducibility:} The simulations for each value of N use seeds that
+depend only on \code{seed}, that N value and \code{n_sims}. So, for a given \code{seed}:
+\itemize{
+\item results are identical whether run sequentially or in parallel, with any
+\pkg{future} plan and any number of workers;
+\item results for an N value do not depend on the other values in \code{N}: N = 400
+gives the same results in \code{N = c(200, 400)} as in \code{N = c(400, 600)}, so
+a grid can be extended without re-running the values already done;
+\item increasing \code{n_sims} keeps the earlier simulations: the first 500
+simulations with \code{n_sims = 1000} are the simulations with
+\code{n_sims = 500}.
+}
+
+Each simulation uses the session's random number generator settings
+(\code{\link[base:Random]{base::RNGkind()}}), including on parallel workers. Results for a given \code{seed}
+can differ between versions of R if the generators change.
+\code{pmgen_simulate()} changes the session's random number stream only by
+calling \code{set.seed(seed)} (if \code{seed} is given) and making one draw.
 
 The \code{"ridge"}, \code{"lasso"} and \code{"elasticnet"} methods need the \pkg{glmnet}
 package, and \code{"firth"} needs \pkg{logistf}.

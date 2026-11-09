@@ -32,3 +32,18 @@ make_sim_fixtures <- function() {
   .sim_fixtures <<- list(ref = ref, tp = tp, df = df)
   .sim_fixtures
 }
+
+# Switch the session to other RNG kinds. Returns a function that puts the
+# session's RNG state (stream and kinds) back as it was; use it with on.exit()
+set_rng_kinds <- function(kind, normal.kind, sample.kind) {
+  old_seed <- get0(".Random.seed", envir = globalenv(), inherits = FALSE)
+  suppressWarnings(RNGkind(kind, normal.kind, sample.kind))  # "Rounding" warns
+  function() {
+    if (is.null(old_seed)) {
+      suppressWarnings(RNGkind("default", "default", "default"))
+      rm(".Random.seed", envir = globalenv())
+    } else {
+      assign(".Random.seed", old_seed, envir = globalenv())
+    }
+  }
+}
