@@ -1,0 +1,10 @@
+pandoc: 3.8.3
+pkgdown: 2.2.1
+pkgdown_sha: ~
+articles:
+  articles/pmgen_distributional_assumptions: pmgen_distributional_assumptions.html
+  pmgen: pmgen.html
+last_built: 2026-11-10T00:49Z
+urls:
+  reference: https://joieensor.github.io/pmsampsize/reference
+  article: https://joieensor.github.io/pmsampsize/articles

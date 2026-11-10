@@ -1,0 +1,262 @@
+# pmsampsize
+
+## Overview
+
+`pmsampsize` computes the **minimum sample size required to develop or
+externally validate a clinical prediction model**. It has three families
+of functions:
+
+| Family | Function(s) | Purpose |
+|----|----|----|
+| Development | [`pmsampsize()`](https://joieensor.github.io/pmsampsize/reference/pmsampsize.md) | Closed-form criteria of Riley *et al.* for developing a model with a **continuous**, **binary** or **survival (time-to-event)** outcome |
+| Validation | [`pmvalsampsize()`](https://joieensor.github.io/pmsampsize/reference/pmvalsampsize.md) | Criteria of Riley *et al.* and Archer *et al.* for the **external validation** of an existing model with a **binary** outcome |
+| Generalised | [`pmgen_reference()`](https://joieensor.github.io/pmsampsize/reference/pmgen_reference.md), [`pmgen_target_population()`](https://joieensor.github.io/pmsampsize/reference/pmgen_target_population.md), [`pmgen_simulate()`](https://joieensor.github.io/pmsampsize/reference/pmgen_simulate.md), [`pmgen_min_n()`](https://joieensor.github.io/pmsampsize/reference/pmgen_min_n.md), [`pmgen_compare()`](https://joieensor.github.io/pmsampsize/reference/pmgen_compare.md) | Simulation-based approach for developing a model with a **binary** outcome using **any model-fitting method** (logistic, ridge, lasso, elastic net, Firth, or your own) |
+
+### New in 2.0.0
+
+Version 2.0.0 brings the former **pmvalsampsize** package and the new
+generalised `pmgen_*()` functions into `pmsampsize`.
+
+- **Existing
+  [`pmsampsize()`](https://joieensor.github.io/pmsampsize/reference/pmsampsize.md)
+  calls are unchanged**: same arguments, same results.
+- **Existing
+  [`pmvalsampsize()`](https://joieensor.github.io/pmsampsize/reference/pmvalsampsize.md)
+  calls give the same results**, except for the `lpcstat` option, which
+  now calculates the non-events mean exactly (results change slightly,
+  and cases that never finished in 0.1.0 now do). The returned
+  `simulated_data_cstat` is now a plain number rather than a pROC `auc`
+  object. The `tolerance`, `increment` and `trace` arguments are retired
+  and ignored with a warning.
+
+See [NEWS](https://joieensor.github.io/pmsampsize/NEWS.md) for details.
+
+## Installation
+
+Install the released version from CRAN:
+
+``` r
+
+install.packages("pmsampsize")
+```
+
+Or install the development version from GitHub:
+
+``` r
+
+# install.packages("remotes")
+remotes::install_github("JoieEnsor/pmsampsize")
+```
+
+Some `pmgen_*()` features use suggested packages, which are only needed
+if you use them: glmnet (ridge, lasso, elastic net), logistf (Firth),
+ggplot2 and scales (plots), furrr and future (parallel simulation).
+
+## Model development: `pmsampsize()`
+
+### Binary outcome
+
+Minimum sample size for a logistic prediction model with 24 candidate
+predictor parameters, an anticipated outcome prevalence of 17.4%, and a
+Cox-Snell R² of 0.288 (taken from an existing model):
+
+``` r
+
+library(pmsampsize)
+
+pmsampsize(type = "b", csrsquared = 0.288, parameters = 24, prevalence = 0.174)
+```
+
+If only a C-statistic (rather than R²) is available from an existing
+model, use the `cstatistic` argument instead:
+
+``` r
+
+pmsampsize(type = "b", cstatistic = 0.89, parameters = 24, prevalence = 0.174)
+```
+
+### Survival outcome
+
+Cox prediction model with 30 candidate predictors, using information
+from an existing study (R² = 0.051, mean follow-up = 2.07 years, event
+rate = 0.065), with a prediction timepoint of 2 years:
+
+``` r
+
+pmsampsize(type = "s", csrsquared = 0.051, parameters = 30, rate = 0.065,
+           timepoint = 2, meanfup = 2.07)
+```
+
+### Continuous outcome
+
+Linear prediction model with 25 candidate predictors, R² = 0.2, mean
+outcome value of 1.9, and SD of 0.6:
+
+``` r
+
+pmsampsize(type = "c", rsquared = 0.2, parameters = 25, intercept = 1.9, sd = 0.6)
+```
+
+### Criteria
+
+**Continuous outcomes**: four criteria:
+
+1.  Small overfitting: expected shrinkage of predictor effects ≤ 10%
+2.  Small absolute difference (≤ 0.05) between apparent and adjusted R²
+3.  Precise estimation of the residual standard deviation
+4.  Precise estimation of the average outcome value
+
+**Binary and survival outcomes**: three criteria:
+
+1.  Small overfitting: expected shrinkage of predictor effects ≤ 10%
+2.  Small absolute difference (≤ 0.05) between apparent and adjusted
+    Nagelkerke’s R²
+3.  Precise estimation (within ± 0.05) of the average outcome risk at
+    the timepoint of interest
+
+## External validation: `pmvalsampsize()`
+
+Minimum sample size to externally validate a model for a binary outcome,
+with anticipated prevalence 0.018 and C-statistic 0.8, where the
+published linear predictor (LP) appeared normal with mean −5 and SD 2.5:
+
+``` r
+
+pmvalsampsize(type = "b", prevalence = 0.018, cstatistic = 0.8,
+              lpnormal = c(-5, 2.5), oeciwidth = 1)
+```
+
+The sample size targets precise estimation of the observed/expected
+(O/E) ratio, the calibration slope and the C-statistic, and optionally
+net benefit (`threshold`). The LP distribution can instead be specified
+by a beta distribution of predicted probabilities (`lpbeta`), or derived
+from the C-statistic (`lpcstat = TRUE`).
+
+## Generalised approach: `pmgen_*()`
+
+The generalised approach ([Riley *et al.*
+2026](https://doi.org/10.1186/s12874-026-02856-7)) simulates development
+datasets at each candidate sample size, fits the model with the chosen
+method, and evaluates its performance in a large target population. The
+minimum sample size is the smallest one meeting your criteria (e.g. the
+probability that the calibration slope is within 0.9 to 1.1).
+
+``` r
+
+predictors <- c("male", "OCuse", "malignancy", "surgery", "ab_leg_trauma",
+                "vein_distension", "calf_diff", "ab_ddimer",
+                "pregnancy", "immobile", "clotting")
+
+# 1. Reference model calibrated to the target prevalence and C-statistic
+ref <- pmgen_reference(joint_data = dvt_data, predictors = predictors,
+                       prevalence = 0.21, cstatistic = 0.78, seed = 42)
+
+# 2. Target population for evaluation
+target_pop <- pmgen_target_population(ref_model = ref, n = 5000, seed = 42)
+
+# 3. Simulate, fit and evaluate at each candidate N
+result <- pmgen_simulate(ref_model = ref, target_pop = target_pop,
+                         N = seq(500, 3000, by = 500), n_sims = 1000,
+                         method = "logistic",
+                         metrics = c("cstat", "cal_slope", "mape"),
+                         seed = 42)
+
+# 4. Smallest N meeting the criteria
+pmgen_min_n(result, criteria = list(
+  cal_slope = list(range = c(0.9, 1.1), min_prob = 0.90),
+  cstat     = list(max_abs_deg_mean = 0.025),
+  mape      = list(max_mean = 0.05)
+))
+
+summary(result)
+plot(result)
+```
+
+Simulations can run in parallel by setting a `future` plan
+(e.g. `future::plan(future::multisession)`); results are identical to a
+sequential run with the same `seed`. See
+[`vignette("pmgen", package = "pmsampsize")`](https://joieensor.github.io/pmsampsize/articles/pmgen.md)
+for a full worked example.
+
+## Citation
+
+If you use `pmsampsize` in your research, please cite the package and
+the methods papers for the functions you used. Run
+
+``` r
+
+citation("pmsampsize")
+```
+
+for the full list, with BibTeX entries.
+
+## Author
+
+**Joie Ensor** (University of Birmingham, <j.ensor@bham.ac.uk>)
+
+With thanks to Richard D. Riley, Emma C. Martin, Gary Collins, Glen
+Martin & Kym Snell for helpful input and feedback.
+
+## License
+
+GPL (≥ 3)
+
+Bugs and feature requests can be submitted via the [GitHub
+Issues](https://github.com/JoieEnsor/pmsampsize/issues) page.
+
+# Package index
+
+## Package overview
+
+- [`pmsampsize-package`](https://joieensor.github.io/pmsampsize/reference/pmsampsize-package.md)
+  : pmsampsize: Sample Size Calculations for Clinical Prediction Models
+
+## Model development
+
+Closed-form criteria for continuous, binary and survival outcomes.
+
+- [`pmsampsize()`](https://joieensor.github.io/pmsampsize/reference/pmsampsize.md)
+  : pmsampsize - Sample Size for Development of a Prediction Model
+
+## External validation
+
+Criteria for the external validation of an existing model (binary
+outcomes).
+
+- [`pmvalsampsize()`](https://joieensor.github.io/pmsampsize/reference/pmvalsampsize.md)
+  : pmvalsampsize - Sample Size for External Validation of a Prediction
+  Model
+
+## Generalised approach
+
+Simulation-based sample size for developing a model with a binary
+outcome, using any model-fitting method.
+
+- [`pmgen_reference()`](https://joieensor.github.io/pmsampsize/reference/pmgen_reference.md)
+  : Specify a Reference Model for Sample Size Calculations
+- [`pmgen_target_population()`](https://joieensor.github.io/pmsampsize/reference/pmgen_target_population.md)
+  : Generate a Target Population for Simulation
+- [`pmgen_simulate()`](https://joieensor.github.io/pmsampsize/reference/pmgen_simulate.md)
+  : Run the Fully Simulation-Based Sample Size Pathway
+- [`pmgen_min_n()`](https://joieensor.github.io/pmsampsize/reference/pmgen_min_n.md)
+  : Identify the Minimum Sample Size Meeting Specified Criteria
+- [`pmgen_compare()`](https://joieensor.github.io/pmsampsize/reference/pmgen_compare.md)
+  : Compare Two pmgen_result Objects
+- [`summary(`*`<pmgen_result>`*`)`](https://joieensor.github.io/pmsampsize/reference/summary.pmgen_result.md)
+  : Summarise a pmgen_result object
+- [`plot(`*`<pmgen_result>`*`)`](https://joieensor.github.io/pmsampsize/reference/plot.pmgen_result.md)
+  : Plot a pmgen_result object
+
+## Data
+
+- [`dvt_data`](https://joieensor.github.io/pmsampsize/reference/dvt_data.md)
+  : Simulated Deep Vein Thrombosis (DVT) Dataset
+
+# Articles
+
+### Generalised approach
+
+- [Getting Started with pmgen: DVT Prediction Model
+  Example](https://joieensor.github.io/pmsampsize/articles/pmgen.md):
+- [Specifying Distributional Assumptions (No Pilot
+  Data)](https://joieensor.github.io/pmsampsize/articles/pmgen_distributional_assumptions.md):
