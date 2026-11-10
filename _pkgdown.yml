@@ -1,6 +1,4 @@
-# Uncomment once GitHub Pages is live, and add the same URL to DESCRIPTION's
-# URL field (CRAN checks that URLs resolve, so not before):
-# url: https://joieensor.github.io/pmsampsize/
+url: https://joieensor.github.io/pmsampsize/
 
 template:
   bootstrap: 5

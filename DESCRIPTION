@@ -23,7 +23,8 @@ Description: Computes the minimum sample size required to develop or
     in the target population is estimated, giving the minimum sample size that
     meets user-specified criteria.
 License: GPL (>= 3)
-URL: https://github.com/JoieEnsor/pmsampsize
+URL: https://joieensor.github.io/pmsampsize/,
+    https://github.com/JoieEnsor/pmsampsize
 BugReports: https://github.com/JoieEnsor/pmsampsize/issues
 Depends: R (>= 4.0.0)
 Imports:
