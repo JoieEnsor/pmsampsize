@@ -43,12 +43,18 @@ model is applied to the target population rows to compute true predicted
 risks and simulated binary outcomes.
 }
 \examples{
-\dontrun{
+# Small settings so the example runs quickly; see pmgen_reference()
 ref <- pmgen_reference(
-  joint_data = my_data, prevalence = 0.68,
-  cstatistic = 0.76, seed = 42
+  joint_data = dvt_data, predictors = setdiff(names(dvt_data), "dvt"),
+  prevalence = 0.21, cstatistic = 0.78,
+  n_bisect_pop = 1e5, n_synth = 1e5, seed = 42
 )
-tp  <- pmgen_target_population(ref, n = 100000, seed = 42)
-print(tp)
+tp <- pmgen_target_population(ref, n = 5000, seed = 42)
+tp
 }
+\references{
+Riley RD, Whittle R, Sadatsafavi M, Martin GP, Pate A, Collins GS, Ensor J. A general sample size framework
+for developing or updating a predictive algorithm: with application to
+clinical prediction models. \emph{BMC Medical Research Methodology}.
+2026;26:121. \doi{10.1186/s12874-026-02856-7}
 }

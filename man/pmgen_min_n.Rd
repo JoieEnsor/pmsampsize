@@ -45,11 +45,25 @@ returns the smallest N at which \strong{all} user-specified criteria are
 simultaneously met.
 }
 \examples{
-\dontrun{
+# Small settings so the example runs quickly; see pmgen_simulate()
+ref <- pmgen_reference(
+  joint_data = dvt_data, predictors = setdiff(names(dvt_data), "dvt"),
+  prevalence = 0.21, cstatistic = 0.78,
+  n_bisect_pop = 1e5, n_synth = 1e5, seed = 42
+)
+tp <- pmgen_target_population(ref, n = 5000, seed = 42)
+result <- pmgen_simulate(ref, tp, N = c(250, 1000), n_sims = 20,
+                         metrics = c("cstat", "cal_slope", "mape"),
+                         seed = 1, verbose = FALSE)
+
 pmgen_min_n(result, criteria = list(
-  cal_slope   = list(range = c(0.9, 1.1), min_prob = 0.90),
-  mape        = list(max_mean = 0.05),
-  ervsi       = list(min_prob_above = 0.90, min_prob = 0.90)
+  cal_slope = list(range = c(0.8, 1.2), min_prob = 0.80),
+  mape      = list(max_mean = 0.05)
 ))
 }
+\references{
+Riley RD, Whittle R, Sadatsafavi M, Martin GP, Pate A, Collins GS, Ensor J. A general sample size framework
+for developing or updating a predictive algorithm: with application to
+clinical prediction models. \emph{BMC Medical Research Methodology}.
+2026;26:121. \doi{10.1186/s12874-026-02856-7}
 }

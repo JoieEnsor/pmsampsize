@@ -142,36 +142,50 @@ a different expected calibration slope at small N) from the true model;
 supply \code{coef} (relative weights) where they are known.
 }
 \examples{
-\dontrun{
-# From a supplied dataset
+# n_bisect_pop and n_synth are reduced from their defaults (1e6) so that
+# the examples run quickly; use the defaults in practice.
+
+# From a supplied dataset (equal relative weights for all predictors)
+predictors <- setdiff(names(dvt_data), "dvt")
 ref <- pmgen_reference(
-  joint_data  = my_data,
-  predictors  = c("age", "bp", "hist"),
-  prevalence  = 0.68,
-  cstatistic  = 0.76,
-  seed        = 42
+  joint_data   = dvt_data,
+  predictors   = predictors,
+  prevalence   = 0.21,
+  cstatistic   = 0.78,
+  n_bisect_pop = 1e5,
+  n_synth      = 1e5,
+  seed         = 42
 )
+ref
 
 # From distributional assumptions
-ref <- pmgen_reference(
+ref_dist <- pmgen_reference(
   joint_data = list(
     age  = list(dist = "normal",    mean = 0, sd = 1),
     bp   = list(dist = "normal",    mean = 0, sd = 1),
     hist = list(dist = "bernoulli", prob = 0.3)
   ),
-  prevalence = 0.10,
-  cstatistic = 0.75,
-  seed       = 42
+  prevalence   = 0.10,
+  cstatistic   = 0.75,
+  n_bisect_pop = 1e5,
+  n_synth      = 1e5,
+  seed         = 42
 )
 
 # Bypassing bisection with a fully pre-specified reference model
-ref <- pmgen_reference(
-  joint_data  = my_data,
-  predictors  = c("age", "bp", "hist"),
-  bisection   = FALSE,
-  intercept   = 1.01,
-  coef        = c(age = -0.12, bp = 0.45, hist = -0.14),
-  seed        = 42
+ref_fixed <- pmgen_reference(
+  joint_data = dvt_data,
+  predictors = c("malignancy", "calf_diff", "ab_ddimer"),
+  bisection  = FALSE,
+  intercept  = -2.5,
+  coef       = c(malignancy = 0.5, calf_diff = 0.8, ab_ddimer = 1.5),
+  n_synth    = 1e5,
+  seed       = 42
 )
 }
+\references{
+Riley RD, Whittle R, Sadatsafavi M, Martin GP, Pate A, Collins GS, Ensor J. A general sample size framework
+for developing or updating a predictive algorithm: with application to
+clinical prediction models. \emph{BMC Medical Research Methodology}.
+2026;26:121. \doi{10.1186/s12874-026-02856-7}
 }

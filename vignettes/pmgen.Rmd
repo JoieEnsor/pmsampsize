@@ -24,9 +24,9 @@ has_plot_pkgs <- requireNamespace("ggplot2", quietly = TRUE) &&
 
 ## Overview
 
-The `pmgen_*()` functions implement the generalised simulation-based framework
-for determining sample sizes when developing clinical prediction models (CPMs),
-as described by Riley et al. Unlike the closed-form criteria in `pmsampsize()`,
+The `pmgen_*()` functions implement the general simulation-based framework
+for determining sample sizes when developing clinical prediction models (CPMs)
+described by Riley et al. (2026). Unlike the closed-form criteria in `pmsampsize()`,
 the generalised approach works for any supervised learning method and provides
 rich summaries of how model performance degrades at different sample sizes.
 
@@ -142,7 +142,7 @@ We evaluate logistic regression across a range of sample sizes.
 result <- pmgen_simulate(
   ref_model   = ref,
   target_pop  = target_pop,
-  N           = c(100, 200, 400, 600, 900, 1200),
+  N           = c(250, 500, 1000, 1500, 2000, 2500, 3000),
   n_sims             = n_sims_vignette,
   method             = "logistic",
   metrics            = c("cstat", "cal_slope", "mape", "net_benefit"),
@@ -178,7 +178,7 @@ plan(multisession)
 result_par <- pmgen_simulate(
   ref_model   = ref,
   target_pop  = target_pop,
-  N           = c(100, 200, 400, 600, 900, 1200),
+  N           = c(250, 500, 1000, 1500, 2000, 2500, 3000),
   n_sims      = 1000,
   method      = "logistic",
   metrics     = c("cstat", "cal_slope", "mape", "net_benefit"),
@@ -202,7 +202,7 @@ plan(multisession, workers = 4)  # cap at 4 cores regardless of machine size
 result_par <- pmgen_simulate(
   ref_model  = ref,
   target_pop = target_pop,
-  N          = c(100, 200, 400, 600, 900, 1200),
+  N           = c(250, 500, 1000, 1500, 2000, 2500, 3000),
   n_sims     = 1000,
   method     = "logistic",
   seed       = 42,
@@ -254,7 +254,7 @@ worker); for 500,000 rows consider capping workers to avoid memory pressure.
 ## Step 4: Summarise Results
 
 `summary()` produces a table of performance summaries for each N, matching the
-structure reported in Riley et al. For each metric it shows the mean, standard
+structure reported in Riley et al. (2026). For each metric it shows the mean, standard
 deviation, 2.5th and 97.5th percentiles, and the mean degradation versus the
 reference model.
 
@@ -266,7 +266,8 @@ summary(result)
 
 `pmgen_min_n()` scans across N values and reports the minimum N at which all
 specified criteria are met. The criteria below follow the guidance in Riley et
-al.:
+al. (2026). (With the small `n_sims` used to build this vignette the result is
+noisy; use 1000 or more in practice.)
 
 - **Calibration slope**: P(0.9 <= slope <= 1.1) >= 0.90
 - **C-statistic degradation**: mean degradation vs. reference <= 0.025
@@ -314,7 +315,7 @@ individual; the vertical axis shows the width of their 95% interval of
 predicted risks.
 
 ```{r plot_instability, eval=has_plot_pkgs}
-plot(result, type = "instability", N = 400)
+plot(result, type = "instability", N = 500)
 ```
 
 ### Calibration instability
@@ -323,7 +324,7 @@ The calibration instability plot overlays calibration curves from a sample of
 the simulation draws, showing the "fan" of uncertainty that shrinks as N grows.
 
 ```{r plot_calibration, eval=has_plot_pkgs}
-plot(result, type = "calibration", N = 400)
+plot(result, type = "calibration", N = 500)
 ```
 
 ## No Data? Using Distributional Assumptions
@@ -350,3 +351,10 @@ This assumes all predictors are independent. The article "Specifying
 Distributional Assumptions (No Pilot Data)" on the package website gives
 guidance on when this is appropriate and how sensitive results are to the
 independence assumption.
+
+## Reference
+
+Riley RD, Whittle R, Sadatsafavi M, Martin GP, Pate A, Collins GS, Ensor J. A general sample size framework for
+developing or updating a predictive algorithm: with application to clinical
+prediction models. *BMC Medical Research Methodology*. 2026;26:121.
+<https://doi.org/10.1186/s12874-026-02856-7>

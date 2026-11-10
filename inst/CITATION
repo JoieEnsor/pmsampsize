@@ -1,0 +1,130 @@
+citHeader("To cite pmsampsize in publications, please cite the package and the methods papers for the functions you used.")
+
+year <- sub("-.*", "", meta$`Date/Publication`)
+if (!length(year) || is.na(year)) year <- format(Sys.Date(), "%Y")
+note <- sprintf("R package version %s", meta$Version)
+
+bibentry(
+  bibtype = "Manual",
+  title   = "{pmsampsize}: Sample Size Calculations for Clinical Prediction Models",
+  author  = person("Joie", "Ensor"),
+  year    = year,
+  note    = note,
+  url     = "https://CRAN.R-project.org/package=pmsampsize",
+  textVersion = paste0(
+    "Ensor J (", year, "). pmsampsize: Sample Size Calculations for ",
+    "Clinical Prediction Models. ", note, ". ",
+    "https://CRAN.R-project.org/package=pmsampsize"
+  )
+)
+
+# ---- Model development: pmsampsize() ---------------------------------------
+
+bibentry(
+  bibtype = "Article",
+  header  = "For pmsampsize() (model development):",
+  title   = "Minimum sample size for developing a multivariable prediction model: Part {I} - Continuous outcomes",
+  author  = c(person("Richard D", "Riley"), person("Kym IE", "Snell"),
+              person("Joie", "Ensor"), person("Danielle L", "Burke"),
+              person("Frank E", "Harrell Jr"), person("Karel GM", "Moons"),
+              person("Gary S", "Collins")),
+  journal = "Statistics in Medicine",
+  year    = "2019",
+  volume  = "38",
+  number  = "7",
+  pages   = "1262--1275",
+  doi     = "10.1002/sim.7993"
+)
+
+bibentry(
+  bibtype = "Article",
+  title   = "Minimum sample size for developing a multivariable prediction model: Part {II} - Binary and time-to-event outcomes",
+  author  = c(person("Richard D", "Riley"), person("Kym IE", "Snell"),
+              person("Joie", "Ensor"), person("Danielle L", "Burke"),
+              person("Frank E", "Harrell Jr"), person("Karel GM", "Moons"),
+              person("Gary S", "Collins")),
+  journal = "Statistics in Medicine",
+  year    = "2019",
+  volume  = "38",
+  number  = "7",
+  pages   = "1276--1296",
+  doi     = "10.1002/sim.7992"
+)
+
+bibentry(
+  bibtype = "Article",
+  title   = "Calculating the sample size required for developing a clinical prediction model",
+  author  = c(person("Richard D", "Riley"), person("Joie", "Ensor"),
+              person("Kym IE", "Snell"), person("Frank E", "Harrell Jr"),
+              person("Glen P", "Martin"), person("Johannes B", "Reitsma"),
+              person("Karel GM", "Moons"), person("Gary", "Collins"),
+              person("Maarten", "van Smeden")),
+  journal = "BMJ",
+  year    = "2020",
+  volume  = "368",
+  pages   = "m441",
+  doi     = "10.1136/bmj.m441"
+)
+
+bibentry(
+  bibtype = "Article",
+  header  = "If the Cox-Snell R-squared was approximated from a C-statistic (pmsampsize(cstatistic = )):",
+  title   = "A note on estimating the {Cox-Snell} {R2} from a reported {C} statistic ({AUROC}) to inform sample size calculations for developing a prediction model with a binary outcome",
+  author  = c(person("Richard D", "Riley"), person("Ben", "Van Calster"),
+              person("Gary S", "Collins")),
+  journal = "Statistics in Medicine",
+  year    = "2021",
+  volume  = "40",
+  number  = "4",
+  pages   = "859--864",
+  doi     = "10.1002/sim.8806"
+)
+
+# ---- External validation: pmvalsampsize() ---------------------------------
+
+bibentry(
+  bibtype = "Article",
+  header  = "For pmvalsampsize() (external validation):",
+  title   = "Minimum sample size for external validation of a clinical prediction model with a binary outcome",
+  author  = c(person("Richard D", "Riley"), person("Thomas PA", "Debray"),
+              person("Gary S", "Collins"), person("Lucinda", "Archer"),
+              person("Joie", "Ensor"), person("Maarten", "van Smeden"),
+              person("Kym IE", "Snell")),
+  journal = "Statistics in Medicine",
+  year    = "2021",
+  volume  = "40",
+  number  = "19",
+  pages   = "4230--4251",
+  doi     = "10.1002/sim.9025"
+)
+
+bibentry(
+  bibtype = "Article",
+  title   = "Minimum sample size for external validation of a clinical prediction model with a continuous outcome",
+  author  = c(person("Lucinda", "Archer"), person("Kym IE", "Snell"),
+              person("Joie", "Ensor"), person("Mohammed T", "Hudda"),
+              person("Gary S", "Collins"), person("Richard D", "Riley")),
+  journal = "Statistics in Medicine",
+  year    = "2021",
+  volume  = "40",
+  number  = "1",
+  pages   = "133--146",
+  doi     = "10.1002/sim.8766"
+)
+
+# ---- Generalised approach: pmgen_*() ---------------------------------------
+
+bibentry(
+  bibtype = "Article",
+  header  = "For the pmgen_*() functions (generalised, simulation-based approach):",
+  title   = "A general sample size framework for developing or updating a predictive algorithm: with application to clinical prediction models",
+  author  = c(person("Richard D", "Riley"), person("Rebecca", "Whittle"),
+              person("Mohsen", "Sadatsafavi"), person("Glen P", "Martin"),
+              person("Alexander", "Pate"), person("Gary S", "Collins"),
+              person("Joie", "Ensor")),
+  journal = "BMC Medical Research Methodology",
+  year    = "2026",
+  volume  = "26",
+  pages   = "121",
+  doi     = "10.1186/s12874-026-02856-7"
+)

@@ -1,0 +1,44 @@
+# Uncomment once GitHub Pages is live, and add the same URL to DESCRIPTION's
+# URL field (CRAN checks that URLs resolve, so not before):
+# url: https://joieensor.github.io/pmsampsize/
+
+template:
+  bootstrap: 5
+
+reference:
+  - title: Package overview
+    contents:
+      - pmsampsize-package
+  - title: Model development
+    desc: Closed-form criteria for continuous, binary and survival outcomes.
+    contents:
+      - pmsampsize
+  - title: External validation
+    desc: Criteria for the external validation of an existing model (binary outcomes).
+    contents:
+      - pmvalsampsize
+  - title: Generalised approach
+    desc: >
+      Simulation-based sample size for developing a model with a binary
+      outcome, using any model-fitting method.
+    contents:
+      - pmgen_reference
+      - pmgen_target_population
+      - pmgen_simulate
+      - pmgen_min_n
+      - pmgen_compare
+      - summary.pmgen_result
+      - plot.pmgen_result
+  - title: Data
+    contents:
+      - dvt_data
+
+articles:
+  - title: Generalised approach
+    navbar: Generalised approach
+    contents:
+      - pmgen
+      - articles/pmgen_distributional_assumptions
+
+news:
+  cran_dates: false

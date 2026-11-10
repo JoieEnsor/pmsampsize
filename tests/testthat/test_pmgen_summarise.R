@@ -23,6 +23,10 @@ test_that("summary.pmgen_result returns a data frame with correct structure", {
   # Mean cstat is a probability
   cstat_rows <- s[s$metric == "cstat", ]
   expect_true(all(cstat_rows$mean > 0 & cstat_rows$mean < 1))
+  # Plain row names (quantile() names such as "2.5%" must not leak in)
+  expect_identical(rownames(s), as.character(seq_len(nrow(s))))
+  expect_identical(rownames(result$summaries[[1]]),
+                   as.character(seq_len(nrow(result$summaries[[1]]))))
 })
 
 test_that("pmgen_min_n errors on missing pred_matrices or bad input", {

@@ -1,12 +1,16 @@
-pmsampsize v2.0.0 (development version)
+pmsampsize v2.0.0 
 =============================================
+pmsampsize now covers the development and external validation of clinical prediction models, in three families of functions: `pmsampsize()` (development), `pmvalsampsize()` (external validation) and the new `pmgen_*()` functions (generalised, simulation-based approach). **Existing `pmsampsize()` calls are unchanged** (same arguments and results). Existing `pmvalsampsize()` calls give the same results as pmvalsampsize 0.1.0, apart from the `lpcstat` option and the type of `simulated_data_cstat` (see below).
+
+* New package title ("Sample Size Calculations for Clinical Prediction Models"), a package help page (`?pmsampsize-package`) and a `CITATION` file: `citation("pmsampsize")` lists the package and the methods papers for each function.
+* References in the help pages updated with full details and DOIs.
 * `pmvalsampsize()` (sample size for external validation of a prediction model; previously the standalone pmvalsampsize package, v0.1.0, released 2023-11-14) is now part of pmsampsize. Existing `pmvalsampsize()` calls give the same results.
 * `pmvalsampsize()` no longer depends on pROC. The c-statistic of the simulated data for the `lpcstat` option is now computed internally (same value), and `simulated_data_cstat` in the returned object is now a plain number rather than a pROC `auc` object.
 * `pmvalsampsize()` `lpcstat` option rewritten. The mean of the non-events LP distribution is now calculated exactly from `prevalence` and `cstatistic`, instead of by an iterative simulation search from a user-supplied start value. This fixes cases where the search never finished (e.g. `prevalence = 0.2, cstatistic = 0.75`). Results for `lpcstat` change slightly because the mean is now more precise (e.g. the help-file example: criteria 2 sample size 16,175 -> 16,270).
 * `lpcstat` is now logical (`lpcstat = TRUE` selects the option; default `FALSE`) and requires `cstatistic` greater than 0.5. A numeric value, as used in 0.1.0, is still accepted and treated as `TRUE`, with a warning.
 * `pmvalsampsize()` arguments `tolerance`, `increment` and `trace` are retired (they only controlled the old `lpcstat` search). They are ignored, with a warning, if supplied, and will be removed in a future major version.
 * The `lpcstat` iteration messages are replaced by a single message giving the calculated non-events mean and the simulated vs target prevalence.
-* New `pmgen_*()` functions for the generalised, simulation-based sample size approach for developing a clinical prediction model (binary outcomes), for any model-fitting method:
+* New `pmgen_*()` functions for the general, simulation-based sample size framework of Riley et al. (2026, BMC Medical Research Methodology 26:121) for developing a clinical prediction model (binary outcomes), for any model-fitting method:
   * `pmgen_reference()` specifies a reference model, calibrated to a target prevalence and c-statistic, from data or from distributional assumptions.
   * `pmgen_target_population()` generates the target population on which the developed models are evaluated.
   * `pmgen_simulate()` simulates development datasets at each candidate sample size, fits the model (built in: logistic, ridge, lasso, elastic net, Firth; or a user-supplied fitting function) and evaluates its performance (c-statistic, calibration slope and intercept, O:E ratio, MAPE, RMSPE, Brier score, net benefit, ERVSI).

@@ -20,7 +20,7 @@ compute_cstat <- function(p_hat, outcome) {
 #' Fits outcome ~ lp in a logistic model and returns the slope coefficient. A
 #' slope of 1 indicates perfect calibration.
 #' @param lp Numeric vector. The model's linear predictor (log-odds) on the
-#'   target population; see [compute_metrics_one_draw()].
+#'   target population; see `compute_metrics_one_draw()`.
 #' @param outcome Integer vector of binary outcomes (0/1).
 #' @noRd
 compute_cal_slope <- function(lp, outcome) {
@@ -202,8 +202,8 @@ summarise_posterior <- function(draws, ref_metrics = NULL) {
       metric  = m,
       mean    = mean(vals, na.rm = TRUE),
       sd      = sd(vals,   na.rm = TRUE),
-      q025    = quantile(vals, 0.025, na.rm = TRUE),
-      q975    = quantile(vals, 0.975, na.rm = TRUE),
+      q025    = quantile(vals, 0.025, na.rm = TRUE, names = FALSE),
+      q975    = quantile(vals, 0.975, na.rm = TRUE, names = FALSE),
       stringsAsFactors = FALSE
     )
     if (!is.null(ref_metrics) && m %in% names(ref_metrics)) {

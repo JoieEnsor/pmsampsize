@@ -192,20 +192,25 @@ pmsampsize(type = "c", rsquared = 0.2, parameters = 25, intercept = 1.9, sd = 0.
 \references{
 Riley RD, Ensor J, Snell KIE, Harrell FE, Martin GP, Reitsma JB, et al.
 Calculating the sample size required for developing a clinical prediction model.
-\emph{BMJ (Clinical research ed)}. 2020
+\emph{BMJ}. 2020;368:m441. \doi{10.1136/bmj.m441}
 
 Riley RD, Snell KIE, Ensor J, Burke DL, Harrell FE, Jr., Moons KG, Collins GS.
-Minimum sample size required for developing a multivariable prediction model: Part I continuous outcomes.
-\emph{Statistics in Medicine}. 2018 (in-press). doi: 10.1002/sim.7993
+Minimum sample size for developing a multivariable prediction model: Part I - Continuous outcomes.
+\emph{Statistics in Medicine}. 2019;38(7):1262-1275. \doi{10.1002/sim.7993}
 
 Riley RD, Snell KIE, Ensor J, Burke DL, Harrell FE, Jr., Moons KG, Collins GS.
-Minimum sample size required for developing a multivariable prediction model:
-Part II binary and time-to-event outcomes.
-\emph{Statistics in Medicine}. 2018 (in-press). doi: 10.1002/sim.7992
+Minimum sample size for developing a multivariable prediction model:
+Part II - Binary and time-to-event outcomes.
+\emph{Statistics in Medicine}. 2019;38(7):1276-1296. \doi{10.1002/sim.7992}
 
 Riley, RD, Van Calster, B, Collins, GS. A note on estimating the Cox-Snell R2
 from a reported C statistic (AUROC) to inform sample size calculations for developing a
-prediction model with a binary outcome. \emph{Statistics in Medicine}. 2020
+prediction model with a binary outcome. \emph{Statistics in Medicine}. 2021;40(4):859-864.
+\doi{10.1002/sim.8806}
+}
+\seealso{
+\code{\link[=pmvalsampsize]{pmvalsampsize()}} for external validation; \code{\link[=pmgen_simulate]{pmgen_simulate()}} for the
+generalised, simulation-based approach (any model-fitting method).
 }
 \author{
 Joie Ensor (University of Birmingham, j.ensor@bham.ac.uk),

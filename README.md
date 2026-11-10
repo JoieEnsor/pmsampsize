@@ -7,16 +7,24 @@
 [![License: GPL (>= 3)](https://img.shields.io/badge/License-GPL%20(%3E%3D%203)-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 <!-- badges: end -->
 
-
 ## Overview
 
-`pmsampsize` computes the **minimum sample size required for the development of a new multivariable prediction model**, using the criteria proposed by Riley *et al.* (2018, 2020). It supports models with:
+`pmsampsize` computes the **minimum sample size required to develop or externally validate a clinical prediction model**. It has three families of functions:
 
-- **Continuous** outcomes (linear prediction models)
-- **Binary** outcomes (logistic prediction models)
-- **Survival / time-to-event** outcomes (Cox prediction models)
+| Family | Function(s) | Purpose |
+|---|---|---|
+| Development | `pmsampsize()` | Closed-form criteria of Riley *et al.* for developing a model with a **continuous**, **binary** or **survival (time-to-event)** outcome |
+| Validation | `pmvalsampsize()` | Criteria of Riley *et al.* and Archer *et al.* for the **external validation** of an existing model with a **binary** outcome |
+| Generalised | `pmgen_reference()`, `pmgen_target_population()`, `pmgen_simulate()`, `pmgen_min_n()`, `pmgen_compare()` | Simulation-based approach for developing a model with a **binary** outcome using **any model-fitting method** (logistic, ridge, lasso, elastic net, Firth, or your own) |
 
-The criteria implemented aim to minimise overfitting and ensure precise estimation of key parameters in the prediction model.
+### New in 2.0.0
+
+Version 2.0.0 brings the former **pmvalsampsize** package and the new generalised `pmgen_*()` functions into `pmsampsize`.
+
+- **Existing `pmsampsize()` calls are unchanged**: same arguments, same results.
+- **Existing `pmvalsampsize()` calls give the same results**, except for the `lpcstat` option, which now calculates the non-events mean exactly (results change slightly, and cases that never finished in 0.1.0 now do). The returned `simulated_data_cstat` is now a plain number rather than a pROC `auc` object. The `tolerance`, `increment` and `trace` arguments are retired and ignored with a warning.
+
+See [NEWS](NEWS.md) for details.
 
 ## Installation
 
@@ -33,11 +41,13 @@ Or install the development version from GitHub:
 remotes::install_github("JoieEnsor/pmsampsize")
 ```
 
-## Usage
+Some `pmgen_*()` features use suggested packages, which are only needed if you use them: glmnet (ridge, lasso, elastic net), logistf (Firth), ggplot2 and scales (plots), furrr and future (parallel simulation).
+
+## Model development: `pmsampsize()`
 
 ### Binary outcome
 
-Calculate the minimum sample size for a logistic prediction model with 24 candidate predictor parameters, an anticipated outcome prevalence of 17.4%, and a Cox-Snell R² of 0.288 (taken from an existing model):
+Minimum sample size for a logistic prediction model with 24 candidate predictor parameters, an anticipated outcome prevalence of 17.4%, and a Cox-Snell R² of 0.288 (taken from an existing model):
 
 ```r
 library(pmsampsize)
@@ -53,7 +63,7 @@ pmsampsize(type = "b", cstatistic = 0.89, parameters = 24, prevalence = 0.174)
 
 ### Survival outcome
 
-Calculate the minimum sample size for a Cox prediction model with 30 candidate predictors, using information from an existing study (R² = 0.051, mean follow-up = 2.07 years, event rate = 0.065), with a prediction timepoint of 2 years:
+Cox prediction model with 30 candidate predictors, using information from an existing study (R² = 0.051, mean follow-up = 2.07 years, event rate = 0.065), with a prediction timepoint of 2 years:
 
 ```r
 pmsampsize(type = "s", csrsquared = 0.051, parameters = 30, rate = 0.065,
@@ -62,67 +72,83 @@ pmsampsize(type = "s", csrsquared = 0.051, parameters = 30, rate = 0.065,
 
 ### Continuous outcome
 
-Calculate the minimum sample size for a linear prediction model with 25 candidate predictors, R² = 0.2, mean outcome value of 1.9, and SD of 0.6:
+Linear prediction model with 25 candidate predictors, R² = 0.2, mean outcome value of 1.9, and SD of 0.6:
 
 ```r
 pmsampsize(type = "c", rsquared = 0.2, parameters = 25, intercept = 1.9, sd = 0.6)
 ```
 
-## Criteria implemented
+### Criteria
 
-### Continuous outcomes — four criteria:
+**Continuous outcomes**: four criteria:
+
 1. Small overfitting: expected shrinkage of predictor effects ≤ 10%
 2. Small absolute difference (≤ 0.05) between apparent and adjusted R²
 3. Precise estimation of the residual standard deviation
 4. Precise estimation of the average outcome value
 
-### Binary and survival outcomes — three criteria:
+**Binary and survival outcomes**: three criteria:
+
 1. Small overfitting: expected shrinkage of predictor effects ≤ 10%
 2. Small absolute difference (≤ 0.05) between apparent and adjusted Nagelkerke's R²
 3. Precise estimation (within ± 0.05) of the average outcome risk at the timepoint of interest
 
-## Key arguments
+## External validation: `pmvalsampsize()`
 
-| Argument | Type(s) | Description |
-|---|---|---|
-| `type` | all | `"c"` continuous, `"b"` binary, `"s"` survival |
-| `parameters` | all | Number of candidate predictor parameters |
-| `shrinkage` | all | Target shrinkage (default = 0.9) |
-| `rsquared` | `"c"` | Anticipated R² of new model |
-| `csrsquared` | `"b"`, `"s"` | Anticipated Cox-Snell R² |
-| `nagrsquared` | `"b"`, `"s"` | Anticipated Nagelkerke's R² |
-| `cstatistic` | `"b"` | C-statistic from existing model (used to approximate Cox-Snell R²) |
-| `prevalence` | `"b"` | Anticipated outcome proportion |
-| `rate` | `"s"` | Overall event rate in the population |
-| `timepoint` | `"s"` | Timepoint of interest for prediction |
-| `meanfup` | `"s"` | Anticipated mean follow-up time |
-| `intercept` | `"c"` | Average outcome value in the population |
-| `sd` | `"c"` | Standard deviation of outcome values |
-| `mmoe` | `"c"` | Multiplicative margin of error for intercept (default = 1.1) |
+Minimum sample size to externally validate a model for a binary outcome, with anticipated prevalence 0.018 and C-statistic 0.8, where the published linear predictor (LP) appeared normal with mean −5 and SD 2.5:
+
+```r
+pmvalsampsize(type = "b", prevalence = 0.018, cstatistic = 0.8,
+              lpnormal = c(-5, 2.5), oeciwidth = 1)
+```
+
+The sample size targets precise estimation of the observed/expected (O/E) ratio, the calibration slope and the C-statistic, and optionally net benefit (`threshold`). The LP distribution can instead be specified by a beta distribution of predicted probabilities (`lpbeta`), or derived from the C-statistic (`lpcstat = TRUE`).
+
+## Generalised approach: `pmgen_*()`
+
+The generalised approach ([Riley *et al.* 2026](https://doi.org/10.1186/s12874-026-02856-7)) simulates development datasets at each candidate sample size, fits the model with the chosen method, and evaluates its performance in a large target population. The minimum sample size is the smallest one meeting your criteria (e.g. the probability that the calibration slope is within 0.9 to 1.1).
+
+```r
+predictors <- c("male", "OCuse", "malignancy", "surgery", "ab_leg_trauma",
+                "vein_distension", "calf_diff", "ab_ddimer",
+                "pregnancy", "immobile", "clotting")
+
+# 1. Reference model calibrated to the target prevalence and C-statistic
+ref <- pmgen_reference(joint_data = dvt_data, predictors = predictors,
+                       prevalence = 0.21, cstatistic = 0.78, seed = 42)
+
+# 2. Target population for evaluation
+target_pop <- pmgen_target_population(ref_model = ref, n = 5000, seed = 42)
+
+# 3. Simulate, fit and evaluate at each candidate N
+result <- pmgen_simulate(ref_model = ref, target_pop = target_pop,
+                         N = seq(500, 3000, by = 500), n_sims = 1000,
+                         method = "logistic",
+                         metrics = c("cstat", "cal_slope", "mape"),
+                         seed = 42)
+
+# 4. Smallest N meeting the criteria
+pmgen_min_n(result, criteria = list(
+  cal_slope = list(range = c(0.9, 1.1), min_prob = 0.90),
+  cstat     = list(max_abs_deg_mean = 0.025),
+  mape      = list(max_mean = 0.05)
+))
+
+summary(result)
+plot(result)
+```
+
+Simulations can run in parallel by setting a `future` plan (e.g. `future::plan(future::multisession)`); results are identical to a sequential run with the same `seed`. See `vignette("pmgen", package = "pmsampsize")` for a full worked example.
 
 ## Citation
 
-If you use `pmsampsize` in your research, please cite:
+If you use `pmsampsize` in your research, please cite the package and the methods papers for the functions you used. Run
 
-```bibtex
-@Manual{,
-  title  = {pmsampsize: Sample Size for Development of a Prediction Model},
-  author = {Joie Ensor},
-  year   = {2023},
-  note   = {R package version 1.1.3},
-  url    = {https://CRAN.R-project.org/package=pmsampsize},
-}
+```r
+citation("pmsampsize")
 ```
 
-Please also cite the following papers:
-
-Riley RD, Ensor J, Snell KIE, Harrell FE, Martin GP, Reitsma JB, et al. Calculating the sample size required for developing a clinical prediction model. *BMJ*. 2020. <https://doi.org/10.1136/bmj.m441>
-
-Riley RD, Snell KIE, Ensor J, Burke DL, Harrell FE Jr., Moons KG, Collins GS. Minimum sample size required for developing a multivariable prediction model: Part I — continuous outcomes. *Statistics in Medicine*. 2018. <https://doi.org/10.1002/sim.7993>
-
-Riley RD, Snell KIE, Ensor J, Burke DL, Harrell FE Jr., Moons KG, Collins GS. Minimum sample size required for developing a multivariable prediction model: Part II — binary and time-to-event outcomes. *Statistics in Medicine*. 2018. <https://doi.org/10.1002/sim.7992>
-
-Riley RD, Van Calster B, Collins GS. A note on estimating the Cox-Snell R² from a reported C statistic (AUROC) to inform sample size calculations for developing a prediction model with a binary outcome. *Statistics in Medicine*. 2020.
+for the full list, with BibTeX entries.
 
 ## Author
 

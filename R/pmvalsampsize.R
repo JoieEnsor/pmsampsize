@@ -26,15 +26,15 @@
 #' ii) precise estimation of the calibration slope (c-slope), and \cr
 #' iii) precise estimation of the c-statistic.
 #'
-#' The sample size calculation requires the user to pre-specify the following; \cr
-#' - the outcome event proportion \cr
-#' - the anticipated O/E performance \cr
-#' - the target precision (CI width) for the O/E \cr
-#' - the anticipated c-slope \cr
-#' - the target precision (CI width) for the c-slope \cr
-#' - the anticipated c-statisitic performance \cr
-#' - the target precision (CI width) for the c-statisitic \cr
-#' - the distribution of estimated probabilities from the model, ideally specified on the log-odds scale - AKA the Linear Predictor (LP) \cr \cr
+#' The sample size calculation requires the user to pre-specify the following:
+#' * the outcome event proportion
+#' * the anticipated O/E performance
+#' * the target precision (CI width) for the O/E
+#' * the anticipated c-slope
+#' * the target precision (CI width) for the c-slope
+#' * the anticipated c-statistic performance
+#' * the target precision (CI width) for the c-statistic
+#' * the distribution of estimated probabilities from the model, ideally specified on the log-odds scale - AKA the Linear Predictor (LP)
 #'
 #' With thanks to Richard Riley for helpful feedback
 #'
@@ -109,7 +109,6 @@
 #' @importFrom stats dnorm integrate plogis qlogis qnorm rbeta rbinom rnorm uniroot
 #' @import graphics
 #' @import utils
-#' @noMd
 #'
 #' @examples
 #' # Examples based on those included in the papers referenced below by
@@ -152,9 +151,11 @@
 #'
 # #' pmvalsampsize(type = "c", rsquared = 0.9, varobs = 0.089, citlciwidth = 0.08)
 #'
-#' @references  Archer L, Snell K, Ensor J, Hudda MT, Collins GS, Riley RD.  Minimum sample size for external validation of a clinical prediction model with a continuous outcome. \emph{Statistics in Medicine. 2020.}
+#' @references  Archer L, Snell K, Ensor J, Hudda MT, Collins GS, Riley RD.  Minimum sample size for external validation of a clinical prediction model with a continuous outcome. \emph{Statistics in Medicine}. 2021;40(1):133-146. \doi{10.1002/sim.8766}
 #'
-#' @references Riley RD, Debray TPA, Collins G, Archer L, Ensor J, van Smeden M, Snell KIE.  Minimum sample size for external validation of a clinical prediction model with a binary outcome. \emph{Statistics in Medicine. 2021.}
+#' @references Riley RD, Debray TPA, Collins G, Archer L, Ensor J, van Smeden M, Snell KIE.  Minimum sample size for external validation of a clinical prediction model with a binary outcome. \emph{Statistics in Medicine}. 2021;40(19):4230-4251. \doi{10.1002/sim.9025}
+#'
+#' @seealso [pmsampsize()] and the `pmgen_*()` functions (e.g. [pmgen_simulate()]) for model development.
 #'
 #'
 #' @export

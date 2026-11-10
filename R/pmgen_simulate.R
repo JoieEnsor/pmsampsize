@@ -82,7 +82,7 @@
 #'
 #' **Development data:** At each simulation iteration, N rows are sampled with
 #' replacement from `ref_model$joint_data`. Binary outcomes are generated from
-#' the reference model's true risks (`Y ~ Bernoulli(plogis(Xβ))`). A warning
+#' the reference model's true risks (`Y ~ Bernoulli(plogis(X %*% beta))`). A warning
 #' is issued if N exceeds the number of rows in `joint_data`.
 #'
 #' **Perfect prediction (`method = "logistic"`):** In small development
@@ -113,18 +113,33 @@
 #'   often each predictor was dropped.
 #'
 #' @examples
-#' \dontrun{
-#' ref <- pmgen_reference(joint_data = my_data, prevalence = 0.3,
-#'                      cstatistic = 0.75, seed = 1)
-#' tp  <- pmgen_target_population(ref, n = 50000, seed = 1)
+#' # Small settings so the example runs quickly. In practice use the
+#' # pmgen_reference() defaults, n_sims = 1000 or more, and a finer N grid.
+#' ref <- pmgen_reference(
+#'   joint_data = dvt_data, predictors = setdiff(names(dvt_data), "dvt"),
+#'   prevalence = 0.21, cstatistic = 0.78,
+#'   n_bisect_pop = 1e5, n_synth = 1e5, seed = 42
+#' )
+#' tp <- pmgen_target_population(ref, n = 5000, seed = 42)
 #'
-#' future::plan(future::multisession, workers = 4)
-#' result <- pmgen_simulate(ref, tp, N = c(200, 500, 1000), n_sims = 500,
-#'                        method = "lasso", seed = 42)
-#' future::plan(future::sequential)
-#'
+#' result <- pmgen_simulate(ref, tp, N = c(250, 1000), n_sims = 20,
+#'                          method = "logistic",
+#'                          metrics = c("cstat", "cal_slope", "mape"),
+#'                          seed = 1, verbose = FALSE)
+#' result
 #' summary(result)
-#' }
+#'
+#' # To run in parallel, set a future plan first (needs furrr and future);
+#' # results are identical to a sequential run with the same seed:
+#' # future::plan(future::multisession, workers = 4)
+#' # result <- pmgen_simulate(ref, tp, N = seq(500, 3000, by = 500),
+#' #                          n_sims = 1000, method = "lasso", seed = 1)
+#' # future::plan(future::sequential)
+#' @references
+#' Riley RD, Whittle R, Sadatsafavi M, Martin GP, Pate A, Collins GS, Ensor J. A general sample size framework
+#' for developing or updating a predictive algorithm: with application to
+#' clinical prediction models. *BMC Medical Research Methodology*.
+#' 2026;26:121. \doi{10.1186/s12874-026-02856-7}
 #' @export
 pmgen_simulate <- function(ref_model,
                           target_pop,
@@ -464,7 +479,7 @@ run_single_sim <- function(n_val, target_pop, ref_model, fit_fn, method_args,
 
 #' Summarise failed fits and perfect-prediction drops for one N value
 #'
-#' @param draws_list List of [run_single_sim()] results.
+#' @param draws_list List of `run_single_sim()` results.
 #' @param predictors Character vector of predictor names.
 #' @return A list with `n_failed`, `n_dropped` (number of fits in which at
 #'   least one predictor was dropped), `dropped` (named integer vector: how

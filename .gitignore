@@ -12,3 +12,4 @@ vignettes/articles/*.html
 vignettes/.build.timestamp
 /doc/
 /Meta/
+docs/

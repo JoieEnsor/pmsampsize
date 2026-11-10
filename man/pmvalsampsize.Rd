@@ -33,7 +33,7 @@ pmvalsampsize(
 \arguments{
 \item{type}{specifies the type of analysis for which sample size is being calculated
 \itemize{
-    \item \code{"b"} specifies sample size calculation for a prediction model with a binary outcome
+\item \code{"b"} specifies sample size calculation for a prediction model with a binary outcome
 }}
 
 \item{cslope}{specifies the anticipated c-slope performance in the validation sample.  Default conservatively assumes perfect c-slope=1.  The value could alternatively be based on a previous validation study for example.  For \bold{binary outcomes} the c-slope calculation requires the user to specify a distribution for the assumed LP in the validation sample (or alternatively the distribution of predicted probabilities in the validation sample). See \code{lp*()} options below.}
@@ -85,21 +85,22 @@ A list including a matrix of calculated sample size requirements for each criter
 \details{
 A series of criteria define the sample size needed to ensure precise estimation of key measures of prediction model performance, allowing conclusions to be drawn about whether the model is potentially accurate and useful in a given population of interest.\cr \cr
 
-
 For \bold{binary outcomes}, there are three criteria to calculate the sample size (N) needed for: \cr
 i) precise estimation of the Observed/Expected (O/E) statistic, \cr
 ii) precise estimation of the calibration slope (c-slope), and \cr
 iii) precise estimation of the c-statistic.
 
-The sample size calculation requires the user to pre-specify the following; \cr
-- the outcome event proportion \cr
-- the anticipated O/E performance \cr
-- the target precision (CI width) for the O/E \cr
-- the anticipated c-slope \cr
-- the target precision (CI width) for the c-slope \cr
-- the anticipated c-statisitic performance \cr
-- the target precision (CI width) for the c-statisitic \cr
-- the distribution of estimated probabilities from the model, ideally specified on the log-odds scale - AKA the Linear Predictor (LP) \cr \cr
+The sample size calculation requires the user to pre-specify the following:
+\itemize{
+\item the outcome event proportion
+\item the anticipated O/E performance
+\item the target precision (CI width) for the O/E
+\item the anticipated c-slope
+\item the target precision (CI width) for the c-slope
+\item the anticipated c-statistic performance
+\item the target precision (CI width) for the c-statistic
+\item the distribution of estimated probabilities from the model, ideally specified on the log-odds scale - AKA the Linear Predictor (LP)
+}
 
 With thanks to Richard Riley for helpful feedback
 }
@@ -143,9 +144,12 @@ lpcstat = TRUE, oeciwidth = 1, seed = 1234, simobs = 10000)
 
 }
 \references{
-Archer L, Snell K, Ensor J, Hudda MT, Collins GS, Riley RD.  Minimum sample size for external validation of a clinical prediction model with a continuous outcome. \emph{Statistics in Medicine. 2020.}
+Archer L, Snell K, Ensor J, Hudda MT, Collins GS, Riley RD.  Minimum sample size for external validation of a clinical prediction model with a continuous outcome. \emph{Statistics in Medicine}. 2021;40(1):133-146. \doi{10.1002/sim.8766}
 
-Riley RD, Debray TPA, Collins G, Archer L, Ensor J, van Smeden M, Snell KIE.  Minimum sample size for external validation of a clinical prediction model with a binary outcome. \emph{Statistics in Medicine. 2021.}
+Riley RD, Debray TPA, Collins G, Archer L, Ensor J, van Smeden M, Snell KIE.  Minimum sample size for external validation of a clinical prediction model with a binary outcome. \emph{Statistics in Medicine}. 2021;40(19):4230-4251. \doi{10.1002/sim.9025}
+}
+\seealso{
+\code{\link[=pmsampsize]{pmsampsize()}} and the \verb{pmgen_*()} functions (e.g. \code{\link[=pmgen_simulate]{pmgen_simulate()}}) for model development.
 }
 \author{
 Joie Ensor (University of Birmingham, j.ensor@bham.ac.uk)

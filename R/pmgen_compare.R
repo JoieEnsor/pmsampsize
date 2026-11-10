@@ -13,11 +13,29 @@
 #'   `difference` (result_1 minus result_2).
 #'
 #' @examples
-#' \dontrun{
-#' result_ridge <- pmgen_simulate(ref, tp, N = 456, method = "ridge", seed = 1)
-#' result_lasso <- pmgen_simulate(ref, tp, N = 456, method = "lasso", seed = 1)
-#' pmgen_compare(result_ridge, result_lasso)
+#' # Small settings so the example runs quickly; see pmgen_simulate()
+#' ref <- pmgen_reference(
+#'   joint_data = dvt_data, predictors = setdiff(names(dvt_data), "dvt"),
+#'   prevalence = 0.21, cstatistic = 0.78,
+#'   n_bisect_pop = 1e5, n_synth = 1e5, seed = 42
+#' )
+#' tp <- pmgen_target_population(ref, n = 5000, seed = 42)
+#'
+#' # Logistic regression vs Firth's penalised likelihood (needs logistf)
+#' if (requireNamespace("logistf", quietly = TRUE)) {
+#'   result_ml    <- pmgen_simulate(ref, tp, N = 250, n_sims = 10,
+#'                                  method = "logistic", seed = 1,
+#'                                  verbose = FALSE)
+#'   result_firth <- pmgen_simulate(ref, tp, N = 250, n_sims = 10,
+#'                                  method = "firth", seed = 1,
+#'                                  verbose = FALSE)
+#'   pmgen_compare(result_ml, result_firth)
 #' }
+#' @references
+#' Riley RD, Whittle R, Sadatsafavi M, Martin GP, Pate A, Collins GS, Ensor J. A general sample size framework
+#' for developing or updating a predictive algorithm: with application to
+#' clinical prediction models. *BMC Medical Research Methodology*.
+#' 2026;26:121. \doi{10.1186/s12874-026-02856-7}
 #' @export
 pmgen_compare <- function(result_1, result_2, stat = "mean") {
 
